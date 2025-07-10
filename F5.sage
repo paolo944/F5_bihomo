@@ -3,6 +3,7 @@ class Mac:
         self.matrix = matrix([])
         self.sig = []
         self.monomial_hash_list = {}
+        self.monomial_inverse_search = []
 
         monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
         self.poly_ring = PolynomialRing(GF(2), monomials_str, order='degrevlex')
@@ -30,6 +31,7 @@ class Mac:
         hash_size = len(self.monomial_hash_list)
 
         self.monomial_hash_list = {m: i + hash_size for i, m in enumerate(monomials)} | self.monomial_hash_list
+        self.monomial_inverse_search += [m for m in monomials]
 
     def polynomial_to_vector(self, f):
         """
@@ -48,11 +50,35 @@ class Mac:
                 sys.exit()
         return vector(vec)
 
+    def row_lm(self, i):
+        """
+        Returns the lead monomial of the row i in the Macaulay
+        matrix
+        """
+        row = self.matrix.row(i)
+        for i, n in enumerate(row):
+            if n != 0:
+                break
+        return self.monomial_inverse_search[len(self.monomial_inverse_search) - i]
+
+    def add_row(self, vec):
+        new_row_matrix = Matrix(QQ, [vec])
+        self.matrix = block_matrix([[self.matrix], [new_row_matrix]])
+
+    def F5_frobenius_criterion(self, u, f, i):
+        for sig in self.sig:
+            if 
+
+        return
+
     def add_line(self, f, i, u):
         """
         add the line (u, f_i) to the Macaulay
         matrix
         """
+
+        vec = self.polynomial_to_vector(u*f)
+
         return
 
 M = Mac(4)
@@ -63,6 +89,7 @@ M.monomial_ordered_list_deg_d(3)
 M.monomial_ordered_list_deg_d(4)
 
 print(M.monomial_hash_list)
+print(M.monomial_inverse_search)
 
 #def F5_criterion(sig, )
 

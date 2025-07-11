@@ -1,9 +1,9 @@
 class Mac:
     def __init__(self, n):
-        self.matrix = matrix([])
-        self.sig = []
-        self.monomial_hash_list = {}
-        self.monomial_inverse_search = []
+        self.matrix = None #The Macaulay matrix
+        self.sig = [] #Array containing to know the index of the polynomial used in the line of this array's index
+        self.monomial_hash_list = {} #To know which column index correspond to this monomial
+        self.monomial_inverse_search = [] #To know which monomial correspond the column i
 
         monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
         self.poly_ring = PolynomialRing(GF(2), monomials_str, order='degrevlex')
@@ -68,11 +68,17 @@ class Mac:
         self.matrix = block_matrix([[self.matrix], [new_row_matrix]])
         return
 
-    def F5_frobenius_criterion(self, u, f, i):
-        for sig in self.sig:
-            if 
-
-        return
+    def F5_frobenius_criterion(self, u, f, i, M):
+        """
+        Returns True if the row of signature (u, f_i)
+        will reduce to 0 in the Macaulay martix
+        """
+        for j, f_index in enumerate(self.sig):
+            if f_index <= i:
+                return M.row_lm(f_index) == u
+            else:
+                return False
+        return False
 
     def add_line(self, f, i, u):
         """
@@ -80,8 +86,11 @@ class Mac:
         matrix
         """
         vec = self.polynomial_to_vector(u*f)
-
-
+        if self.matrix == None:
+            self.matrix = matrix(vec)
+        else:
+            self.add_row(vec)
+        self.sig.append(i)
         return
 
     def gauss(self):
@@ -114,6 +123,7 @@ M.monomial_ordered_list_deg_d(4)
 
 print(M.monomial_hash_list)
 print(M.monomial_inverse_search)
+print(M.matrix)
 
 #def F5_criterion(sig, )
 

@@ -7,9 +7,10 @@ class Mac:
 
         monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
         self.poly_ring = PolynomialRing(GF(2), monomials_str, order='degrevlex')
-        self.variables = [self.poly_ring(monom) for monom in monomials_str]
-        field_eq = [mon**2 + mon for mon in self.variables]
+        variables = [self.poly_ring(monom) for monom in monomials_str]
+        field_eq = [mon**2 + mon for mon in variables]
         self.quotient_ring = self.poly_ring.quotient(field_eq)
+        self.variables = [self.quotient_ring(monom) for monom in variables]
         return
 
     def monomial_ordered_list_deg_d(self, d):
@@ -75,7 +76,7 @@ class Mac:
         Returns True if the row of signature (u, f_i)
         will reduce to 0 in the Macaulay martix
         """
-        for j, (_, f_index) in enumerate(self.sig):
+        for j, (_, f_index) in enumerate(M.sig):
             if f_index <= i:
                 return M.row_lm(f_index) == u
             else:
@@ -123,12 +124,21 @@ class Mac:
                 counter += 1
         return counter
 
-    def add_lines(self, f_i, i, d, Mac_d_1):
+    def add_lines(self, f_i, i, d, Mac_d_1, Mac_d_2):
         """
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
         """
-        #for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
+        for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
+            x_lambda = list(e.variables()).sort()[0] #biggest variable in e
+            for x_i in self.variables:
+                if x_i < x_lambda:
+                    if f_i.total_degree() == 1:
+                        if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
+                            self.add_line(f_i, i, x_i*e)
+                    elif f_i.total_degree() == 2:
+                        if not self.F5_criterion(x_i*e, f_i, i, Mac_d_2):
+                            self.add_line(f_i, i, x_i*e)
         return
 
 def F5Matrix(F, dmax):
@@ -137,6 +147,7 @@ def F5Matrix(F, dmax):
     such that i < j
     dmax is the maximal degree to obtain a d_max-grobner basis of F
     F is supposed to be a quadratic system, so deg(f_i) <= 2 forall 0 <= i < m
+    We follow F5Matrix by Bardet in her PhD thesis p.21
     """
     m = len(F)
     n = F[0].parent().ngens()
@@ -146,7 +157,7 @@ def F5Matrix(F, dmax):
 
     for d in range(F[0].total_degree(), dmax):
         for i in range(0, m):
-            f_i = F[i]
+            f_i = Mac_d.quotient_ring(F[i])
             if f_i.total_degree() == d:
                 Mac_d.add_line(f_i, i, 1)
             else:
@@ -157,18 +168,55 @@ def F5Matrix(F, dmax):
         Mac_d_1 = Mac_d
         Mac_d_2 = Mac_d_1
 
-M = Mac(4)
 
-M.monomial_ordered_list_deg_d(1)
-M.monomial_ordered_list_deg_d(2)
-M.monomial_ordered_list_deg_d(3)
-M.monomial_ordered_list_deg_d(4)
+def doit(n, m):
+    """
+    Generate random system of n variables and m
+    polynomials on GF(2)
+    Stolen from hpXbred :)
+    """
+    # planted solution
+    V = GF(2)**n 
+    x = V.random_element() 
+    I = []
 
-print(M.monomial_hash_list)
-print(M.monomial_inverse_search)
-print(M.quotient_ring)
+    R = PolynomialRing(GF(2), n, 'x')
+    
+    def random_quad_poly(R):
+        K = R.base_ring()
+        v = vector(R.gens())
+        n = len(v) 
+        Mq = matrix.random(K, n, n)
+        Ml = matrix.random(K, 1, n)
+        f = v * Mq * v + (Ml*v)[0] + K.random_element()
+        return f
+    
+    # m random polynomials
+    for _ in range(m): 
+        f = random_quad_poly(R) 
+        f += f(*x) 
+        I.append(f)
 
-#def F5_criterion(sig, )
+    return I
 
-#def F5_bihom(F, d1, d2):
+if __name__ == '__main__':
+    F = doit(9, 8)
 
+    F5Matrix(F, 4)
+
+    """
+    M = Mac(4)
+
+    M.monomial_ordered_list_deg_d(1)
+    M.monomial_ordered_list_deg_d(2)
+    M.monomial_ordered_list_deg_d(3)
+    M.monomial_ordered_list_deg_d(4)
+
+    print(M.monomial_hash_list)
+    print(M.monomial_inverse_search)
+    print(M.quotient_ring)
+
+    #def F5_criterion(sig, )
+
+    #def F5_bihom(F, d1, d2):
+    """

@@ -8,6 +8,7 @@ class Mac:
         monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
         self.poly_ring = PolynomialRing(GF(2), monomials_str, order='degrevlex')
         self.variables = [self.poly_ring(monom) for monom in monomials_str]
+        return
 
     def monomial_ordered_list_deg_d(self, d):
         """
@@ -32,6 +33,7 @@ class Mac:
 
         self.monomial_hash_list = {m: i + hash_size for i, m in enumerate(monomials)} | self.monomial_hash_list
         self.monomial_inverse_search += [m for m in monomials]
+        return
 
     def polynomial_to_vector(self, f):
         """
@@ -64,6 +66,7 @@ class Mac:
     def add_row(self, vec):
         new_row_matrix = Matrix(QQ, [vec])
         self.matrix = block_matrix([[self.matrix], [new_row_matrix]])
+        return
 
     def F5_frobenius_criterion(self, u, f, i):
         for sig in self.sig:
@@ -76,9 +79,30 @@ class Mac:
         add the line (u, f_i) to the Macaulay
         matrix
         """
-
         vec = self.polynomial_to_vector(u*f)
 
+
+        return
+
+    def gauss(self):
+        """
+        Simple Gauss without pivoting
+        """
+        for i in range(self.matrix.nrows()):
+            try:
+                k = self.matrix.nonzero_positions_in_row(i)[0]
+            except:
+                print("Erreur, la ligne est nulle")
+                sys.exit()
+
+            for j in range(i+1, self.matrix.nrows()):
+                try:
+                    kp = self.matrix.nonzero_positions_in_row(j)[0]
+                    if kp == k:
+                        self.matrix.add_multiple_of_row(j, i, 1)
+                except:
+                    print("Erreur, la ligne est nulle")
+                    sys.exit()
         return
 
 M = Mac(4)

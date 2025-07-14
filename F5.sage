@@ -156,6 +156,7 @@ def F5Matrix(F, dmax):
     Mac_d_2 = None
 
     for d in range(F[0].total_degree(), dmax):
+        Mac_d.monomial_ordered_list_deg_d(d)
         for i in range(0, m):
             f_i = Mac_d.quotient_ring(F[i])
             if f_i.total_degree() == d:

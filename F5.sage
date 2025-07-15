@@ -176,8 +176,12 @@ def update_gb(gb, Md, Mtilde):
     if Md.matrix.nrows() != Mtilde.matrix.nrows():
         print("Euuuh erreur pas normal, Mtilde.nrows() == Md.nrows() normalement")
     for i in range(Md.matrix.nrows()):
-        if Md.row_lm(i) != Mtilde.row_lm(i):
-            gb.append(Mtilde.vector_to_polynomial(i))
+        Md_lm = Mtilde.row_lm(i)
+        if Md.row_lm(i) != Md_lm:
+            poly = Mtilde.vector_to_polynomial(i)
+            already_in_gb = any(p.lm() == Md_lm for p in gb)
+            if not already_in_gb:
+                gb.append(poly)
     return
 
 def F5Matrix(F, dmax):
@@ -289,6 +293,10 @@ if __name__ == '__main__':
     print(len(gb))
 
     print(Ideal(gb).basis_is_groebner())
+
+    gb = Ideal(F).groebner_basis('msolve')
+
+    print(len(gb))
 
     """
     M = Mac(4)

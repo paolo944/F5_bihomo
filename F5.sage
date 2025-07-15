@@ -106,7 +106,6 @@ class Mac:
         """
         Simple Gauss without pivoting
         """
-        print(self.matrix)
         for i in range(self.matrix.nrows()):
             try:
                 k = self.matrix.nonzero_positions_in_row(i)[0]
@@ -137,10 +136,14 @@ class Mac:
         s.t. deg(uf_i) == d
         """
         for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
+            if f_ii < i:
+                continue
+            elif f_ii > i:
+                return
             if e == 1:
                 x_lambda = 1
             else:
-                print(self.poly_ring(e))
+                print(e)
                 x_lambda = self.quotient_ring(list(self.poly_ring(e).variables()).sort()[0]) #biggest variable in e
             for x_i in self.variables:
                 if x_i > x_lambda:
@@ -174,9 +177,6 @@ def F5Matrix(F, dmax):
         Mac_d.monomial_ordered_list_deg_d(d)
         Mac_d.monomial_ordered_list_deg_d(d-1)
         Mac_d.monomial_ordered_list_deg_d(d-2)
-        print(Mac_d)
-        print(Mac_d_1)
-        print(Mac_d_2)
         for i in range(0, m):
             f_i = F[i]
             if F[i].total_degree() == d:
@@ -185,7 +185,7 @@ def F5Matrix(F, dmax):
                 Mac_d.add_lines(f_i, i, d, Mac_d_1, Mac_d_2)
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()
-        print(f"number of reductions to 0 in degree {d}: {reductions_to_zero}")
+        print(f"number of reductions to 0 in degree {d}: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d
     return
@@ -236,7 +236,7 @@ def homogenized_ideal(system):
     return system2
 
 if __name__ == '__main__':
-    F = homogenized_ideal(doit(4, 5))
+    F = homogenized_ideal(doit(8, 7))
 
     F5Matrix(F, 5)
 

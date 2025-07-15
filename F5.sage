@@ -1,3 +1,5 @@
+import copy
+
 class Mac:
     def __init__(self, n, d):
         self.matrix = None #The Macaulay matrix
@@ -62,17 +64,20 @@ class Mac:
         matrix
         """
         row = self.matrix.row(i)
-        for i, n in enumerate(row):
+        for j, n in enumerate(row):
             if n != 0:
                 break
-        return self.monomial_inverse_search[len(self.monomial_inverse_search) - i]
+        try:
+            return self.monomial_inverse_search[len(self.monomial_inverse_search) - j - 1]
+        except:
+            print(f"{len(self.monomial_inverse_search) - j} / {len(self.monomial_inverse_search)}")
 
     def add_row(self, vec):
         if self.d < 4:
             new_row_matrix = matrix(GF(2), [vec])
         else:
             new_row_matrix = matrix(GF(2), [vec], sparse=True)
-        self.matrix = block_matrix([ [self.matrix], [new_row_matrix] ])
+        self.matrix = self.matrix.stack(new_row_matrix)
         return
 
     def F5_frobenius_criterion(self, u, f, i, M):
@@ -110,8 +115,7 @@ class Mac:
             try:
                 k = self.matrix.nonzero_positions_in_row(i)[0]
             except:
-                print("Erreur, la ligne est nulle")
-                #sys.exit()
+                continue
 
             for j in range(i+1, self.matrix.nrows()):
                 try:
@@ -119,8 +123,7 @@ class Mac:
                     if kp == k:
                         self.matrix.add_multiple_of_row(j, i, 1)
                 except:
-                    print("Erreur, la ligne est nulle")
-                    #sys.exit()
+                    continue
         return
 
     def verify_reductions_zero(self):
@@ -143,8 +146,7 @@ class Mac:
             if e == 1:
                 x_lambda = 1
             else:
-                print(e)
-                x_lambda = self.quotient_ring(list(self.poly_ring(e).variables()).sort()[0]) #biggest variable in e
+                x_lambda = e.monomials()[0].variables()[0] #biggest variable in e
             for x_i in self.variables:
                 if x_i > x_lambda:
                     if f_i.total_degree() == 1:
@@ -154,6 +156,29 @@ class Mac:
                         if not self.F5_frobenius_criterion(x_i*e, f_i, i, Mac_d_2):
                             self.add_line(f_i, i, x_i*e)
         return
+    
+    def vector_to_polynomial(self, i):
+        """
+        Convert the vector of row i of the Macaulay matrix
+        into the polynomial correspondong to it
+        """        
+        n = len(self.monomial_inverse_search)
+        poly = 0
+        for j in self.matrix.nonzero_positions_in_row(i):
+            try:
+                poly += self.monomial_inverse_search[len(self.monomial_inverse_search) - j - 1]
+            except:
+                print(f"{len(self.monomial_inverse_search) - j} / {len(self.monomial_inverse_search)}")
+                return
+        return poly
+
+def update_gb(gb, Md, Mtilde):
+    if Md.matrix.nrows() != Mtilde.matrix.nrows():
+        print("Euuuh erreur pas normal, Mtilde.nrows() == Md.nrows() normalement")
+    for i in range(Md.matrix.nrows()):
+        if Md.row_lm(i) != Mtilde.row_lm(i):
+            gb.append(Mtilde.vector_to_polynomial(i))
+    return
 
 def F5Matrix(F, dmax):
     """
@@ -168,6 +193,7 @@ def F5Matrix(F, dmax):
     Mac_d = None
     Mac_d_1 = None
     Mac_d_2 = None
+    gb = []
 
     print(f"F5 for d={F[0].total_degree()}...{dmax}")
 
@@ -183,12 +209,14 @@ def F5Matrix(F, dmax):
                 Mac_d.add_line(f_i, i, 1)
             else:
                 Mac_d.add_lines(f_i, i, d, Mac_d_1, Mac_d_2)
+        tmp_Mac = copy.deepcopy(Mac_d)
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree {d}: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
+        update_gb(gb, tmp_Mac, Mac_d)
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d
-    return
+    return gb
 
 def doit(n, m):
     """
@@ -235,10 +263,32 @@ def homogenized_ideal(system):
 
     return system2
 
-if __name__ == '__main__':
-    F = homogenized_ideal(doit(8, 7))
+def generating_bardet_series(system):
+    """
+    Returns the generating series of bardet of a supposed 
+    semi-regular system without taking into account the 
+    field equations
+    """
+    series_ring.<z> = PowerSeriesRing(ZZ)
+    n = system[0].parent().ngens()
+    term1 = 1
+    for i in system:
+        term1 *= (1+z**i.degree())
 
-    F5Matrix(F, 5)
+    term2 = (1+z)**n
+    return term2 / term1
+
+if __name__ == '__main__':
+    F = homogenized_ideal(doit(8, 9))
+    D = Ideal(F).degree_of_semi_regularity()
+    print(f"degree of semi-regularity of F: {D}")
+
+    gb = F5Matrix(F, D)
+
+    gb = [lift(p) for p in gb]
+    print(len(gb))
+
+    print(Ideal(gb).basis_is_groebner())
 
     """
     M = Mac(4)

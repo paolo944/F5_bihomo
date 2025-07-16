@@ -264,6 +264,15 @@ def F5Matrix(F, dmax):
         update_gb(gb, tmp_Mac, Mac_d)
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d
+
+        """
+        #Verifier que les conversions sont bonnes:
+        for (i, r) in enumerate(Mac_d.matrix.rows()):
+            p = Mac_d.vector_to_polynomial(i)
+            v = Mac_d.polynomial_to_vector(p)
+            print(f"test ligne {i}: {v == r}")
+        """
+
     return gb
 
 def doit(n, m):
@@ -340,13 +349,13 @@ if __name__ == '__main__':
     #gb = [lift(p) for p in gb]
     print(len(gb))
 
-    gb2 = Ideal(gb).groebner_basis('msolve')
+    gb2 = Ideal(gb).groebner_basis()
 
     #print(gb)
 
     print(Ideal(gb).basis_is_groebner())
 
-    gb = Ideal(F).groebner_basis('msolve')
+    gb = Ideal(F).groebner_basis()
     gb3 = Ideal(F).groebner_basis()
 
     print(len(gb))

@@ -11,17 +11,19 @@ class Mac:
         self.poly_ring = PolynomialRing(GF(2), monomials_str, order='degrevlex')
         variables = [self.poly_ring(monom) for monom in monomials_str]
         field_eq = [mon**2 + mon for mon in variables]
-        self.quotient_ring = self.poly_ring.quotient(field_eq)
+        #self.quotient_ring = self.poly_ring.quotient(field_eq)
+        self.quotient_ring = self.poly_ring 
         self.variables = [self.quotient_ring(monom) for monom in variables]
         self.d = d
         return
 
+    """
     def monomial_ordered_list_deg_d(self, d):
-        """
+        
         Generate all the monomials of degree d in
         GF(2).<x1,..,xn> and add them to the hash
         list of the existant monomials
-        """
+
         R = self.quotient_ring
         n = R.ngens()
         subsets = Subsets(range(n), d)
@@ -40,6 +42,31 @@ class Mac:
         self.monomial_hash_list = {self.quotient_ring(m): i + hash_size for i, m in enumerate(monomials)} | self.monomial_hash_list
         self.monomial_inverse_search += [self.quotient_ring(m) for m in monomials]
         return
+    """
+
+    def monomial_ordered_list_deg_d(self, d):
+        """
+        Generate all the monomials of degree d in
+        GF(2).<x1,..,xn> using Sage's monomials_of_degree(d),
+        and add them to the hash list of the existing monomials.
+        """
+        R = self.quotient_ring
+        poly_ring = self.poly_ring
+
+        # Generate monomials of exact degree d using Sage built-in method
+        monomials = poly_ring.monomials_of_degree(d)
+
+        # Convert each monomial to the quotient ring
+        monomials_in_R = [R(m) for m in monomials]
+
+        # Sort them (if order matters for hashing)
+        monomials_in_R.sort()
+
+        # Add to hash list
+        hash_size = len(self.monomial_hash_list)
+        self.monomial_hash_list = {m: i + hash_size for i, m in enumerate(monomials_in_R)} | self.monomial_hash_list
+        self.monomial_inverse_search += monomials_in_R
+    
 
     def polynomial_to_vector(self, f):
         """
@@ -172,6 +199,19 @@ class Mac:
                 return
         return poly
 
+    def corank(self):
+        nnz_columns = 0
+        nnz_rows = 0
+        for i in range(self.matrix.ncols()):
+            if self.matrix.nonzero_positions_in_column(i) != []:
+                nnz_columns += 1
+
+        for i in range(self.matrix.nrows()):
+            if self.matrix.nonzero_positions_in_row(i) != []:
+                nnz_rows += 1
+
+        return nnz_columns - nnz_rows
+
 def update_gb(gb, Md, Mtilde):
     if Md.matrix.nrows() != Mtilde.matrix.nrows():
         print("Euuuh erreur pas normal, Mtilde.nrows() == Md.nrows() normalement")
@@ -217,6 +257,7 @@ def F5Matrix(F, dmax):
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree {d}: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
+        print(f"Corank of degree {d}: {Mac_d.corank()}")
         update_gb(gb, tmp_Mac, Mac_d)
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d
@@ -277,14 +318,15 @@ def generating_bardet_series(system):
     n = system[0].parent().ngens()
     term1 = 1
     for i in system:
-        term1 *= (1+z**i.degree())
+        term1 *= (1-z**i.degree())
 
-    term2 = (1+z)**n
-    return term2 / term1
+    term2 = (1-z)**n
+    return term1 / term2
 
 if __name__ == '__main__':
     F = homogenized_ideal(doit(8, 9))
     D = Ideal(F).degree_of_semi_regularity()
+    print(generating_bardet_series(F))
     print(f"degree of semi-regularity of F: {D}")
 
     gb = F5Matrix(F, D)

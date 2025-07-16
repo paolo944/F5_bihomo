@@ -46,114 +46,108 @@ class Mac:
 
     def monomial_ordered_list_deg_d(self, d):
         """
-        Generate all the monomials of degree d in
-        GF(2).<x1,..,xn> using Sage's monomials_of_degree(d),
-        and add them to the hash list of the existing monomials.
+        Generate all monomials of degree d and add them to hash list
         """
         R = self.quotient_ring
         poly_ring = self.poly_ring
 
-        # Generate monomials of exact degree d using Sage built-in method
         monomials = poly_ring.monomials_of_degree(d)
-
-        # Convert each monomial to the quotient ring
         monomials_in_R = [R(m) for m in monomials]
-
-        # Sort them (if order matters for hashing)
         monomials_in_R.sort()
 
-        # Add to hash list
         hash_size = len(self.monomial_hash_list)
         self.monomial_hash_list = {m: i + hash_size for i, m in enumerate(monomials_in_R)} | self.monomial_hash_list
         self.monomial_inverse_search += monomials_in_R
     
-
     def polynomial_to_vector(self, f):
         """
-        Convert the polynomial f into a vector
-        with columns corresponding to the monomial
-        list ordering
+        Convert polynomial f to vector according to monomial ordering
         """
         n = len(self.monomial_hash_list)
         vec = [0] * n
         for monomial in f.monomials():
             try:
                 index = self.monomial_hash_list[monomial]
-                vec[n - 1 - index] = 1
-            except Exception as error:
-                print(f"Erreur polynomial_to_vector {error}")
-                sys.exit()
+                vec[index] = 1
+            except KeyError:
+                print(f"Erreur: monôme {monomial} non trouvé dans hash_list")
+                continue
         return vector(GF(2), vec)
 
     def row_lm(self, i):
         """
-        Returns the lead monomial of the row i in the Macaulay
-        matrix
+        Returns the leading monomial of row i
         """
         row = self.matrix.row(i)
-        for j, n in enumerate(row):
-            if n != 0:
-                break
-        try:
-            return self.monomial_inverse_search[len(self.monomial_inverse_search) - j - 1]
-        except:
-            print(f"{len(self.monomial_inverse_search) - j} / {len(self.monomial_inverse_search)}")
+        positions = self.matrix.nonzero_positions_in_row(i)
+        if positions:
+            return self.monomial_inverse_search[positions[0]]
+        return None
 
     def add_row(self, vec):
+        """
+        Add a row to the matrix
+        """
         if self.d < 4:
             new_row_matrix = matrix(GF(2), [vec])
         else:
             new_row_matrix = matrix(GF(2), [vec], sparse=True)
-        self.matrix = self.matrix.stack(new_row_matrix)
+        
+        if self.matrix is None:
+            self.matrix = new_row_matrix
+        else:
+            self.matrix = self.matrix.stack(new_row_matrix)
         return
 
-    def F5_frobenius_criterion(self, u, f, i, M):
+    def F5_criterion(self, u, f_i, i, M_prev):
         """
-        Returns True if the row of signature (u, f_i)
-        will reduce to 0 in the Macaulay martix
+        F5 criterion: returns True if row with signature (u, f_i) 
+        will reduce to 0
         """
-        if M == None:
+        if M_prev is None:
             return False
-        for j, (_, f_index) in enumerate(M.sig):
-            if f_index <= i:
-                return M.row_lm(f_index) == u
-            else:
-                return False
+        
+        # Selon Bardet: si u est un terme de tête dans M̃_{d-d_i,i-1}
+        for j in range(M_prev.matrix.nrows()):
+            sig_u, sig_i = M_prev.sig[j]
+            if sig_i < i and M_prev.row_lm(j) == u:
+                return True
         return False
 
     def add_line(self, f, i, u):
         """
-        add the line (u, f_i) to the Macaulay
-        matrix
+        Add line (u, f_i) to Macaulay matrix
         """
         vec = self.polynomial_to_vector(self.quotient_ring(u*f))
-        if self.matrix == None:
-            self.matrix = matrix(GF(2), vec)
-        else:
-            self.add_row(vec)
+        self.add_row(vec)
         self.sig.append((u, i))
         return
 
     def gauss(self):
         """
-        Simple Gauss without pivoting
+        Gaussian elimination following Bardet's description
+        Only operations allowed: row_i ← c × row_i + c' × row_{i-j} with j > 0
         """
-        for i in range(self.matrix.nrows()):
+        nrows = self.matrix.nrows()
+        for i in range(nrows):
             try:
-                k = self.matrix.nonzero_positions_in_row(i)[0]
-            except:
-                continue
-
-            for j in range(i+1, self.matrix.nrows()):
+                lead_i = self.matrix.nonzero_positions_in_row(i)[0]
+            except IndexError:
+                continue  # ligne nulle
+            
+            # Réduire les lignes suivantes par la ligne i
+            for j in range(i+1, nrows):
                 try:
-                    kp = self.matrix.nonzero_positions_in_row(j)[0]
-                    if kp == k:
-                        self.matrix.add_multiple_of_row(j, i, 1)
-                except:
+                    positions_j = self.matrix.nonzero_positions_in_row(j)
+                    if positions_j and positions_j[0] == lead_i:
+                        self.matrix.add_multiple_of_row(j, i, 1)  # row_j += row_i
+                except IndexError:
                     continue
-        return
 
     def verify_reductions_zero(self):
+        """
+        Count zero rows after reduction
+        """
         counter = 0
         for i in range(self.matrix.nrows()):
             if self.matrix.nonzero_positions_in_row(i) == []:
@@ -175,33 +169,34 @@ class Mac:
             else:
                 x_lambda = e.monomials()[0].variables()[0] #biggest variable in e
             for x_i in self.variables:
-                if x_i > x_lambda:
+                if x_i >= x_lambda:
                     if f_i.total_degree() == 1:
-                        if not self.F5_frobenius_criterion(x_i*e, f_i, i, Mac_d_1):
+                        if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
                             self.add_line(f_i, i, x_i*e)
                     elif f_i.total_degree() == 2:
-                        if not self.F5_frobenius_criterion(x_i*e, f_i, i, Mac_d_2):
+                        if not self.F5_criterion(x_i*e, f_i, i, Mac_d_2):
                             self.add_line(f_i, i, x_i*e)
         return
     
     def vector_to_polynomial(self, i):
         """
-        Convert the vector of row i of the Macaulay matrix
-        into the polynomial correspondong to it
-        """        
-        n = len(self.monomial_inverse_search)
+        Convert row i of matrix back to polynomial
+        """
         poly = 0
         for j in self.matrix.nonzero_positions_in_row(i):
-            try:
-                poly += self.monomial_inverse_search[len(self.monomial_inverse_search) - j - 1]
-            except:
-                print(f"{len(self.monomial_inverse_search) - j} / {len(self.monomial_inverse_search)}")
-                return
+            if j < len(self.monomial_inverse_search):
+                poly += self.monomial_inverse_search[j]
+            else:
+                print(f"Index {j} hors limites pour monomial_inverse_search")
         return poly
 
     def corank(self):
+        """
+        Compute corank of the matrix
+        """
         nnz_columns = 0
         nnz_rows = 0
+        
         for i in range(self.matrix.ncols()):
             if self.matrix.nonzero_positions_in_column(i) != []:
                 nnz_columns += 1
@@ -219,7 +214,15 @@ def update_gb(gb, Md, Mtilde):
         Md_lm = Mtilde.row_lm(i)
         if Md.row_lm(i) != Md_lm:
             poly = Mtilde.vector_to_polynomial(i)
-            already_in_gb = any(p.lm() == Md_lm for p in gb)
+            already_in_gb = False
+            for p in gb:
+                try:
+                    already_in_gb = already_in_gb or p.lm() == Md_lm
+                except AttributeError:
+                    if p == 1:
+                        already_in_gb = already_in_gb or 1 == Md_lm
+                    else:
+                        print("Oulalala erreur")
             if not already_in_gb:
                 gb.append(poly)
     return
@@ -245,8 +248,8 @@ def F5Matrix(F, dmax):
         print(f"d={d}")
         Mac_d = Mac(n, d)
         Mac_d.monomial_ordered_list_deg_d(d)
-        Mac_d.monomial_ordered_list_deg_d(d-1)
-        Mac_d.monomial_ordered_list_deg_d(d-2)
+        #Mac_d.monomial_ordered_list_deg_d(d-1)
+        #Mac_d.monomial_ordered_list_deg_d(d-2)
         for i in range(0, m):
             f_i = F[i]
             if F[i].total_degree() == d:
@@ -325,20 +328,30 @@ def generating_bardet_series(system):
 
 if __name__ == '__main__':
     F = homogenized_ideal(doit(8, 9))
+    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
+    for i in F:
+        print(i.total_degree())
     print(f"degree of semi-regularity of F: {D}")
 
     gb = F5Matrix(F, D)
 
-    gb = [lift(p) for p in gb]
+    #gb = [lift(p) for p in gb]
     print(len(gb))
+
+    gb2 = Ideal(gb).groebner_basis('msolve')
+
+    #print(gb)
 
     print(Ideal(gb).basis_is_groebner())
 
     gb = Ideal(F).groebner_basis('msolve')
+    gb3 = Ideal(F).groebner_basis()
 
     print(len(gb))
+    print(len(gb3))
+    print(len(gb2))
 
     """
     M = Mac(4)

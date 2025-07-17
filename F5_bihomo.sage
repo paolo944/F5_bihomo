@@ -1,7 +1,7 @@
 import copy
 
 class Mac:
-    def __init__(self, n, d):
+    def __init__(self, n, d1, d2):
         self.matrix = None #The Macaulay matrix
         self.sig = [] #Array containing to know the index of the polynomial used in the line of this array's index
         self.monomial_hash_list = {} #To know which column index correspond to this monomial
@@ -10,11 +10,11 @@ class Mac:
         monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
         self.poly_ring = PolynomialRing(GF(2), monomials_str, order='degrevlex')
         variables = [self.poly_ring(monom) for monom in monomials_str]
-        field_eq = [mon**2 + mon for mon in variables]
+        #field_eq = [mon**2 + mon for mon in variables]
         #self.quotient_ring = self.poly_ring.quotient(field_eq)
-        self.quotient_ring = self.poly_ring 
-        self.variables = [self.quotient_ring(monom) for monom in variables]
-        self.d = d
+        #self.quotient_ring = self.poly_ring 
+        self.variables = [self.poly_ring(monom) for monom in variables]
+        self.d = (d1, d2)
         return
 
     """
@@ -44,21 +44,27 @@ class Mac:
         return
     """
 
-    def monomial_ordered_list_deg_d(self, d):
+    def monomial_ordered_list_deg_d(self, d1, d2):
         """
-        Generate all monomials of degree d and add them to hash list
+        Generate all the monomials of degree d in
+        GF(2).<x1,..,xn> using Sage's monomials_of_degree(d),
+        and add them to the hash list of the existing monomials.
         """
-        R = self.quotient_ring
-        poly_ring = self.poly_ring
+        R = self.poly_ring
+        n = R.ngens()
+        monomials = []
 
-        monomials = poly_ring.monomials_of_degree(d)
-        monomials_in_R = [R(m) for m in monomials]
-        monomials_in_R.sort()
+        for exponents_x in IntegerVectors(d1, n//2):
+            for exponents_y in IntegerVectors(d2, n//2):
+                monomials.append(R.monomial(*(list(exponents_x) + list(exponents_y))))
 
+        monomials.sort()
         hash_size = len(self.monomial_hash_list)
-        self.monomial_hash_list = {m: i + hash_size for i, m in enumerate(monomials_in_R)} | self.monomial_hash_list
-        self.monomial_inverse_search += monomials_in_R
+        self.monomial_hash_list = {m: i + hash_size for i, m in enumerate(monomials)} | self.monomial_hash_list
+        self.monomial_inverse_search += [m for m in monomials]
+        return
     
+
     def polynomial_to_vector(self, f):
         """
         Convert polynomial f to vector according to monomial ordering
@@ -88,7 +94,8 @@ class Mac:
         """
         Add a row to the matrix
         """
-        if self.d < 4:
+        d1, d2 = self.d
+        if d1 + d2 < 4:
             new_row_matrix = matrix(GF(2), [vec])
         else:
             new_row_matrix = matrix(GF(2), [vec], sparse=True)
@@ -118,7 +125,7 @@ class Mac:
         """
         Add line (u, f_i) to Macaulay matrix
         """
-        vec = self.polynomial_to_vector(self.quotient_ring(u*f))
+        vec = self.polynomial_to_vector(u*f)
         self.add_row(vec)
         self.sig.append((u, i))
         return
@@ -126,7 +133,7 @@ class Mac:
     def gauss(self):
         """
         Gaussian elimination following Bardet's description
-        Only operations allowed: row_i ← c × row_i + c' × row_{i-j} with j > 0
+        Only operations allowed: row_i ← c * row_i + c' * row_{i-j} with j > 0
         """
         nrows = self.matrix.nrows()
         for i in range(nrows):
@@ -145,9 +152,6 @@ class Mac:
                     continue
 
     def verify_reductions_zero(self):
-        """
-        Count zero rows after reduction
-        """
         counter = 0
         for i in range(self.matrix.nrows()):
             if self.matrix.nonzero_positions_in_row(i) == []:
@@ -180,23 +184,22 @@ class Mac:
     
     def vector_to_polynomial(self, i):
         """
-        Convert row i of matrix back to polynomial
-        """
+        Convert the vector of row i of the Macaulay matrix
+        into the polynomial correspondong to it
+        """        
+        n = len(self.monomial_inverse_search)
         poly = 0
         for j in self.matrix.nonzero_positions_in_row(i):
-            if j < len(self.monomial_inverse_search):
-                poly += self.monomial_inverse_search[j]
-            else:
-                print(f"Index {j} hors limites pour monomial_inverse_search")
+            try:
+                poly += self.monomial_inverse_search[len(self.monomial_inverse_search) - j - 1]
+            except:
+                print(f"{len(self.monomial_inverse_search) - j} / {len(self.monomial_inverse_search)}")
+                return
         return poly
 
     def corank(self):
-        """
-        Compute corank of the matrix
-        """
         nnz_columns = 0
         nnz_rows = 0
-        
         for i in range(self.matrix.ncols()):
             if self.matrix.nonzero_positions_in_column(i) != []:
                 nnz_columns += 1
@@ -229,6 +232,14 @@ def update_gb(gb, Md, Mtilde):
                 gb.append(poly)
     return
 
+def integer_vectors_at_most(max_sum):
+    """Génère tous les vecteurs d'entiers de longueur donnée avec somme ≤ max_sum"""
+    result = []
+    for s in range(max_sum + 1):
+        for v in IntegerVectors(s, 2, min_part=1):
+            result.append(v)
+    return result
+
 def F5Matrix(F, dmax):
     """
     F is homogeneous polynomials ordered such that deg(f_i) < deg(f_j) forall i, j
@@ -244,37 +255,33 @@ def F5Matrix(F, dmax):
     Mac_d_2 = None
     gb = []
 
-    print(f"F5 for d={F[0].total_degree()}...{dmax}")
+    degs = integer_vectors_at_most(dmax)
 
-    for d in range(F[0].total_degree(), dmax+1):
-        print(f"d={d}")
-        Mac_d = Mac(n, d)
-        Mac_d.monomial_ordered_list_deg_d(d)
+    for i in degs:
+        print(i)
+
+    print(f"F5 bihomogeneous for d={F[0].total_degree()}...{dmax}")
+
+    for (d1, d2) in degs:
+        print(f"d=({d1}, {d2})")
+        Mac_d = Mac(n, d1, d2)
+        Mac_d.monomial_ordered_list_deg_d(d1, d2)
         #Mac_d.monomial_ordered_list_deg_d(d-1)
         #Mac_d.monomial_ordered_list_deg_d(d-2)
         for i in range(0, m):
             f_i = F[i]
-            if F[i].total_degree() == d:
+            if d1+d2 == 2:
                 Mac_d.add_line(f_i, i, 1)
             else:
                 Mac_d.add_lines(f_i, i, Mac_d_1, Mac_d_2)
         tmp_Mac = copy.deepcopy(Mac_d)
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()
-        print(f"number of reductions to 0 in degree {d}: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
-        print(f"Corank of degree {d}: {Mac_d.corank()}")
+        print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.matrix.nrows()}")
+        print(f"Corank of degree ({d1}, {d2}): {Mac_d.corank()}")
         update_gb(gb, tmp_Mac, Mac_d)
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d
-
-        """
-        #Verifier que les conversions sont bonnes:
-        for (i, r) in enumerate(Mac_d.matrix.rows()):
-            p = Mac_d.vector_to_polynomial(i)
-            v = Mac_d.polynomial_to_vector(p)
-            print(f"test ligne {i}: {v == r}")
-        """
-
     return gb
 
 def doit(n, m):
@@ -338,33 +345,30 @@ def generating_bardet_series(system):
     return term1 / term2
 
 if __name__ == '__main__':
+    """
+    test = integer_vectors_at_most(5)
+    for i in test:
+        print(i)
+    """
     #F = homogenized_ideal(doit(8, 9))
-    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_10_21.sobj"))
+    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
     for i in F:
         print(i.total_degree())
     print(f"degree of semi-regularity of F: {D}")
 
-    gb = F5Matrix(F, D)
+    gb = F5Matrix(F, 3)
 
-    #gb = [lift(p) for p in gb]
+    """
     print(len(gb))
-
-    gb2 = Ideal(gb).groebner_basis()
-
-    #print(gb)
 
     print(Ideal(gb).basis_is_groebner())
 
-    gb = Ideal(F).groebner_basis()
-    gb3 = Ideal(F).groebner_basis()
+    gb = Ideal(F).groebner_basis('msolve')
 
     print(len(gb))
-    print(len(gb3))
-    print(len(gb2))
 
-    """
     M = Mac(4)
 
     M.monomial_ordered_list_deg_d(1)

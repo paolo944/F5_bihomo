@@ -112,6 +112,8 @@ class Mac:
             sig_u, sig_i = M_prev.sig[j]
             if sig_i < i and M_prev.row_lm(j) == u:
                 return True
+            elif sig_i >= i:
+                return False
         return False
 
     def add_line(self, f, i, u):
@@ -242,7 +244,7 @@ def F5Matrix(F, dmax):
     Mac_d = None
     Mac_d_1 = None
     Mac_d_2 = None
-    gb = []
+    gb = copy.copy(F)
 
     print(f"F5 for d={F[0].total_degree()}...{dmax}")
 
@@ -338,15 +340,22 @@ def generating_bardet_series(system):
     return term1 / term2
 
 if __name__ == '__main__':
-    #F = homogenized_ideal(doit(8, 9))
-    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_10_21.sobj"))
+    F = homogenized_ideal(doit(10, 11))
+    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
     for i in F:
         print(i.total_degree())
     print(f"degree of semi-regularity of F: {D}")
 
+    print(len(F))
+
     gb = F5Matrix(F, D)
+
+    print(len(F))
+
+    #for i in F:
+    #    print(i in gb)
 
     #gb = [lift(p) for p in gb]
     print(len(gb))

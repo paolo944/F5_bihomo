@@ -250,9 +250,9 @@ def F5Matrix(F, dmax):
     """
     m = len(F)
     n = F[0].parent().ngens()
-    Mac_d = None
-    Mac_d_1 = None
-    Mac_d_2 = None
+    Mac_d = []
+    Mac_d_1 = []
+    Mac_d_2 = []
     gb = []
 
     degs = integer_vectors_at_most(dmax)

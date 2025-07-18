@@ -8,8 +8,8 @@ class Mac:
         self.monomial_inverse_search = [] #To know which monomial correspond the column i
 
         #monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
-        monomials_str = ['x'+str(i) for i in range(1, n+ 1)]
-        self.poly_ring = PolynomialRing(GF(2), monomials_str, order='degrevlex')
+        monomials_str = ['x'+str(i) for i in range(1, n + 1)]
+        self.poly_ring = PolynomialRing(GF(5), monomials_str, order='degrevlex')
         variables = [self.poly_ring(monom) for monom in monomials_str]
         field_eq = [mon**2 + mon for mon in variables]
         #self.quotient_ring = self.poly_ring.quotient(field_eq)
@@ -67,14 +67,14 @@ class Mac:
         """
         n = len(self.monomial_hash_list)
         vec = [0] * n
-        for monomial in f.monomials():
+        for monomial, coeff in zip(f.monomials(), f.coefficients()):
             try:
                 index = self.monomial_hash_list[monomial]
-                vec[index] = 1
+                vec[index] = coeff
             except KeyError:
                 print(f"Erreur: monôme {monomial} non trouvé dans hash_list")
                 continue
-        return vector(GF(2), vec)
+        return vector(f.base_ring(), vec)
 
     def row_lm(self, i):
         """
@@ -93,9 +93,9 @@ class Mac:
         Fonction testé -> Correcte
         """
         if self.d < 4:
-            new_row_matrix = matrix(GF(2), [vec])
+            new_row_matrix = matrix(GF(5), [vec])
         else:
-            new_row_matrix = matrix(GF(2), [vec], sparse=True)
+            new_row_matrix = matrix(GF(5), [vec], sparse=True)
         
         if self.matrix is None:
             self.matrix = new_row_matrix
@@ -149,8 +149,9 @@ class Mac:
                 try:
                     positions_j = self.matrix.nonzero_positions_in_row(j)
                     if positions_j and positions_j[0] == lead_i:
+                        factor = self.matrix[j, positions_j[0]] * self.matrix[i, lead_i]
                         for k in range(ncols):
-                            self.matrix[j, k] += self.matrix[i, k]
+                            self.matrix[j, k] -= factor * self.matrix[i, k]
                 except IndexError:
                     continue
 
@@ -292,14 +293,14 @@ def F5Matrix(F, dmax):
                 print(f"added ({1}, {f_i}) = {f_i}")
             else:
                 Mac_d.add_lines(f_i, i, Mac_d_1, Mac_d_2)
-            tmp_Mac = copy.deepcopy(Mac_d)
-            print("Mac before Gauss")
-            print(Mac_d.matrix)
-            Mac_d.gauss()
-            print("Mac after Gauss")
-            print(Mac_d.matrix)
-            print()
-            update_gb(gb, tmp_Mac, Mac_d)
+        tmp_Mac = copy.deepcopy(Mac_d)
+        print("Mac before Gauss")
+        print(Mac_d.matrix)
+        Mac_d.gauss()
+        print("Mac after Gauss")
+        print(Mac_d.matrix)
+        print()
+        update_gb(gb, tmp_Mac, Mac_d)
         reductions_to_zero = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree {d}: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
         print(f"Corank of degree {d}: {Mac_d.corank()}")
@@ -378,19 +379,21 @@ def generating_bardet_series(system):
     return term1 / term2
 
 if __name__ == '__main__':
-    #F = homogenized_ideal(doit(3, 3))
-    R.<x1, x2, x3> = PolynomialRing(GF(2), order='degrevlex')
-    F = [x2^2 + x1*x3 + x2*x3,
-    x1^2 + x1*x2 + x1*x3,
-    x1^2 + x2*x3 + x3^2]
+    #F = homogenized_ideal(doit(3, 4))
+    
+    R.<x1, x2, x3> = PolynomialRing(GF(5), order='degrevlex')
+    F = [3*x1^2 + 4*x1*x2 + 2*x2^2,
+    2*x1^2 + 3*x1*x2 + 4*x2^2 + 3*x3^2,
+    x2^2 + 4*x2*x3]
+    
     #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
     #D = Ideal(F).degree_of_semi_regularity()
-    print(generating_bardet_series(F))
+    #print(generating_bardet_series(F))
     for i in F:
         print(i.total_degree())
     print(f"degree of semi-regularity of F: {D}")
 
-    gb = F5Matrix(F, 4)
+    gb = F5Matrix(F, 2)
 
     #for i in F:
     #    print(i in gb)

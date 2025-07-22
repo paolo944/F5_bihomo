@@ -5,5 +5,6 @@
 #include <stdint.h>
 
 void xor_rows_avx2(uint64_t* dest, const uint64_t* src, int nwords);
+int ctzll(uint64_t x);
 
 #endif

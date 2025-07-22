@@ -193,7 +193,7 @@ class Mac:
                     mat_bool[i, j] = bool(element != 0)
             
             mat_compact = self.compact_matrix(mat_bool)
-            mat_compact = np.array(mat_compact, dtype=np.uint64)
+            mat_compact = np.ascontiguousarray(mat_compact, dtype=np.uint64)
             gauss_avx2.gauss_elim_avx2(mat_compact, nrows, mat_compact.shape[1])
             mat_uncompact = self.decomp_matrix(mat_compact, mat_bool.shape)
 
@@ -211,15 +211,17 @@ class Mac:
         Simple Gauss sans pivot et sans backtracking avec l'élimination
         Fonction testé -> Correcte
         """
+        zeros = []
         t0 = time.time()
         nrows = self.matrix.nrows()
-        print("pivots with normal Gauss")
+        print("pivots with normal Gauss\n [", end="")
         for i in range(nrows):
             try:
                 lead_i = self.matrix.nonzero_positions_in_row(i)[0]
             except IndexError:
+                zeros.append(i)
                 continue  # ligne nulle
-            print(lead_i, end=" ")
+            print(lead_i, end=", ")
 
             for j in range(i+1, nrows):
                 try:
@@ -232,8 +234,10 @@ class Mac:
                             self.matrix.add_multiple_of_row(j, i, 1)
                 except IndexError:
                     continue
+        print("]")
         t1 = time.time()        
         print(f"[TIMER] Temps pour Gauss opti (matrice {nrows}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
+        print(zeros)
 
     def verify_reductions_zero(self):
         """

@@ -132,24 +132,29 @@ class Mac:
 
     def gauss(self):
         """
-        Gaussian elimination following Bardet's description
-        Only operations allowed: row_i ← c * row_i + c' * row_{i-j} with j > 0
+        Simple Gauss sans pivot et sans backtracking avec l'élimination
+        Fonction testé -> Correcte
         """
+        t0 = time.time()
         nrows = self.matrix.nrows()
         for i in range(nrows):
             try:
                 lead_i = self.matrix.nonzero_positions_in_row(i)[0]
             except IndexError:
                 continue  # ligne nulle
-            
-            # Réduire les lignes suivantes par la ligne i
             for j in range(i+1, nrows):
                 try:
                     positions_j = self.matrix.nonzero_positions_in_row(j)
-                    if positions_j and positions_j[0] == lead_i:
-                        self.matrix.add_multiple_of_row(j, i, 1)  # row_j += row_i
+                    if lead_i in positions_j:
+                        if self.poly_ring.characteristic() != 2:
+                            factor = self.matrix[j, positions_j.index(lead_i)] / self.matrix[i, lead_i]
+                            self.matrix.add_multiple_of_row(j, i, factor)
+                        else:
+                            self.matrix.add_multiple_of_row(j, i, 1)
                 except IndexError:
                     continue
+        t1 = time.time()        
+        print(f"[TIMER] Temps pour Gauss opti (matrice {nrows}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
 
     def verify_reductions_zero(self):
         counter = 0
@@ -163,6 +168,8 @@ class Mac:
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
         """
+        t0 = time.time()
+        #print(f"add lines for i:{i} f_i:{f_i}")
         for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
             if f_ii < i:
                 continue
@@ -172,34 +179,44 @@ class Mac:
                 x_lambda = 1
             else:
                 x_lambda = e.monomials()[0].variables()[0] #biggest variable in e
+                #print(f"{e.monomials()}")
+            #print(f"e: {e}, x_lambda:{x_lambda}")
             for x_i in self.variables:
                 if x_i >= x_lambda:
                     if f_i.total_degree() == 1:
-                        if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
-                            self.add_line(f_i, i, x_i*e)
+                        #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
+                        self.add_line(f_i, i, x_i*e)
                     elif f_i.total_degree() == 2:
-                        if not self.F5_criterion(x_i*e, f_i, i, Mac_d_2):
-                            self.add_line(f_i, i, x_i*e)
+                        #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_2):
+                        self.add_line(f_i, i, x_i*e)
+                            #print(f"added ({x_i*e}, {f_i}) = {f_i*x_i*e}")
+            #print()
+
+        t1 = time.time()
+        print(f"[TIMER] Temps pour add_lines (deg {self.d}, poly {i}) : {t1 - t0:.4f} s")
         return
     
     def vector_to_polynomial(self, i):
         """
-        Convert the vector of row i of the Macaulay matrix
-        into the polynomial correspondong to it
-        """        
-        n = len(self.monomial_inverse_search)
+        Convert row i of matrix back to polynomial
+        Fonction testé -> Correcte
+        """
         poly = 0
         for j in self.matrix.nonzero_positions_in_row(i):
-            try:
-                poly += self.monomial_inverse_search[len(self.monomial_inverse_search) - j - 1]
-            except:
-                print(f"{len(self.monomial_inverse_search) - j} / {len(self.monomial_inverse_search)}")
-                return
+            if j < len(self.monomial_inverse_search):
+                poly += self.matrix[i, j] * self.monomial_inverse_search[j]
+            else:
+                print(f"Index {j} hors limites pour monomial_inverse_search")
         return poly
 
     def corank(self):
+        """
+        Compute corank of the matrix
+        Fonction testé -> Correcte
+        """
         nnz_columns = 0
         nnz_rows = 0
+        
         for i in range(self.matrix.ncols()):
             if self.matrix.nonzero_positions_in_column(i) != []:
                 nnz_columns += 1
@@ -279,7 +296,7 @@ def F5Matrix(F, dmax):
         reductions_to_zero = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.matrix.nrows()}")
         print(f"Corank of degree ({d1}, {d2}): {Mac_d.corank()}")
-        update_gb(gb, tmp_Mac, Mac_d)
+        #update_gb(gb, tmp_Mac, Mac_d)
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d
     return gb
@@ -344,6 +361,31 @@ def generating_bardet_series(system):
     term2 = (1-z)**n
     return term1 / term2
 
+def Nm(n, m, t1, t2):
+    """
+    internal function for the hilbert_biseries
+    """
+    sum_l = 0
+    for l in range(1, m - n + 1):
+        sum_k = 0
+        for k in range(1, n + 1):
+            sum_k += (t1^(n - k))*binomial(l + n - k - 1, n - k)
+        bracket = 1 - (1 - t1)**l * sum_k
+        term = ((1 - t1*t2)^(m - n - l)) * t1*t2*((1 - t2)^(n))
+        sum_l += term * bracket
+    return sum_l
+
+def hilbert_biseries(nx, ny, m):
+    """
+    Returns the hilbert bi-series for a quadratic
+    system of nx + ny variables and m polynomials
+    result from https://arxiv.org/abs/1001.4004
+    """
+    R.<tx,ty> = PowerSeriesRing(ZZ, default_prec=max(nx, ny) +2)
+    denom = ((1 - tx)^(nx)) * ((1 - ty)^(ny))
+    num = (1 - tx*ty)^m + Nm(ny, m, tx, ty) + Nm(nx, m, ty, tx)
+    return num / denom
+
 if __name__ == '__main__':
     """
     test = integer_vectors_at_most(5)
@@ -356,9 +398,12 @@ if __name__ == '__main__':
     print(generating_bardet_series(F))
     for i in F:
         print(i.total_degree())
-    print(f"degree of semi-regularity of F: {D}")
 
-    gb = F5Matrix(F, 3)
+    half_n = F[0].parent().ngens() // 2
+    print(f"degree of semi-regularity of F: {D}")
+    print(f"Série génératrice bilinéaire: {hilbert_biseries(half_n, half_n, len(F))}")
+
+    gb = F5Matrix(F, half_n + 2)
 
     """
     print(len(gb))

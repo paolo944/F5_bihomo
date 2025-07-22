@@ -17,7 +17,12 @@ void xor_rows_avx2(uint64_t* dest, const uint64_t* src, int nwords) {
     }
 }
 
-int ctzll(uint64_t x) {
-    if (x == 0) return 64;
-    return __builtin_ctzll(x);
+int first_pivot(uint64_t x) {
+    uint64_t mask;
+    for (int i = 0; i < 64; i++) {
+        mask = 1 << i;
+        if ((x & mask) != 0)
+            return i;
+    }
+    return -1;
 }

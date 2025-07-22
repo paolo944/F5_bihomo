@@ -1,12 +1,16 @@
-from setuptools import setup, Extension
+from setuptools import setup
 from Cython.Build import cythonize
+from setuptools.extension import Extension
 
-ext = Extension(
-    name="gauss_avx2",
-    sources=["gauss_avx2.pyx", "avx2_core.c"],
-    extra_compile_args=["-mavx2", "-O3"],
-)
+extensions = [
+    Extension(
+        "gauss_avx2",
+        ["gauss_avx2.pyx", "avx2_core.c"],
+        extra_compile_args=["-O3", "-mavx2", "-march=native"],
+        extra_link_args=["-mavx2"],
+    )
+]
 
 setup(
-    ext_modules=cythonize([ext])
+    ext_modules=cythonize(extensions)
 )

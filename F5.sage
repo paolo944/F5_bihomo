@@ -1,7 +1,9 @@
 import copy
+import time
+import numpy as np
 
 class Mac:
-    def __init__(self, n, d):
+    def __init__(self, n, d, F):
         self.matrix = None #The Macaulay matrix
         self.sig = [] #Array containing to know the index of the polynomial used in the line of this array's index
         self.monomial_hash_list = {} #To know which column index correspond to this monomial
@@ -9,7 +11,7 @@ class Mac:
 
         #monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
         monomials_str = ['x'+str(i) for i in range(1, n + 1)]
-        self.poly_ring = PolynomialRing(GF(5), monomials_str, order='degrevlex')
+        self.poly_ring = PolynomialRing(F, monomials_str, order='degrevlex')
         variables = [self.poly_ring(monom) for monom in monomials_str]
         field_eq = [mon**2 + mon for mon in variables]
         #self.quotient_ring = self.poly_ring.quotient(field_eq)
@@ -93,9 +95,9 @@ class Mac:
         Fonction testé -> Correcte
         """
         if self.d < 4:
-            new_row_matrix = matrix(GF(5), [vec])
+            new_row_matrix = matrix(self.poly_ring.base_ring(), [vec])
         else:
-            new_row_matrix = matrix(GF(5), [vec], sparse=True)
+            new_row_matrix = matrix(self.poly_ring.base_ring(), [vec], sparse=True)
         
         if self.matrix is None:
             self.matrix = new_row_matrix
@@ -130,30 +132,108 @@ class Mac:
         self.sig.append((u, i))
         return
 
-    def gauss(self):
+    def compact_matrix(self, mat_bool):
         """
-        Gaussian elimination following Bardet's description
-        Only operations allowed: row_i ← c * row_i + c' * row_{i-j} with j > 0
+        Version optimisée pour SageMath utilisant la vectorisation numpy.
         Fonction testé -> Correcte
         """
+        nrows, ncols = mat_bool.shape
+        ncols_words = (ncols + 63) // 64
+        compact = np.zeros((nrows, ncols_words), dtype=np.uint64)
+        
+        # Traiter par blocs de 64 colonnes
+        for word_idx in range(ncols_words):
+            start_col = word_idx * 64
+            end_col = min(start_col + 64, ncols)
+            
+            # Extraire le bloc de colonnes
+            block = mat_bool[:, start_col:end_col]
+            
+            # Convertir chaque colonne en bits - version plus robuste pour SageMath
+            for bit_pos in range(end_col - start_col):
+                mask = block[:, bit_pos]
+                # Conversion explicite pour éviter les conflits de types SageMath
+                mask_uint64 = np.array(mask, dtype=np.uint64)
+                compact[:, word_idx] |= (mask_uint64 << np.uint64(bit_pos))
+        
+        return compact
+
+    def decomp_matrix(self, compact, original_shape):
+        """
+        Décompacte une matrice compacte vers sa forme booléenne originale.
+        Compatible SageMath.
+        Fonction testé -> Correcte
+        """
+        nrows, ncols = original_shape
+        mat_bool = np.zeros((nrows, ncols), dtype=bool)
+        
+        for i in range(nrows):
+            for j in range(ncols):
+                word = j // 64
+                bit = j % 64
+                # Conversion explicite pour SageMath
+                bit_value = int(compact[i, word]) & (1 << bit)
+                if bit_value != 0:
+                    mat_bool[i, j] = True
+                    
+        return mat_bool
+
+    def gauss(self):
+        import gauss_avx2
+        t0 = time.time()
+
+        if self.poly_ring.characteristic() == 2:
+            nrows = self.matrix.nrows()
+            ncols = self.matrix.ncols()
+            
+            mat_bool = np.zeros((nrows, ncols), dtype=bool)
+            for i in range(nrows):
+                for j in range(ncols):
+                    element = self.matrix[i, j]
+                    mat_bool[i, j] = bool(element != 0)
+            
+            mat_compact = self.compact_matrix(mat_bool)
+            mat_compact = np.array(mat_compact, dtype=np.uint64)
+            gauss_avx2.gauss_elim_avx2(mat_compact, nrows, mat_compact.shape[1])
+            mat_uncompact = self.decomp_matrix(mat_compact, mat_bool.shape)
+
+            for i in range(nrows):
+                for j in range(ncols):
+                    value = self.poly_ring(1) if mat_uncompact[i, j] else self.poly_ring(0)
+                    self.matrix[i, j] = value
+
+        t1 = time.time()        
+        print(f"[TIMER] Temps pour Gauss opti (matrice {nrows}x{ncols}) : {t1 - t0:.4f} s")
+
+
+    def gauss2(self):
+        """
+        Simple Gauss sans pivot et sans backtracking avec l'élimination
+        Fonction testé -> Correcte
+        """
+        t0 = time.time()
         nrows = self.matrix.nrows()
-        ncols = self.matrix.ncols()
+        print("pivots with normal Gauss")
         for i in range(nrows):
             try:
                 lead_i = self.matrix.nonzero_positions_in_row(i)[0]
             except IndexError:
                 continue  # ligne nulle
-            
-            # Réduire les lignes suivantes par la ligne i
+            print(lead_i, end=" ")
+
             for j in range(i+1, nrows):
                 try:
                     positions_j = self.matrix.nonzero_positions_in_row(j)
-                    if positions_j and positions_j[0] == lead_i:
-                        factor = self.matrix[j, positions_j[0]] * self.matrix[i, lead_i]
-                        for k in range(ncols):
-                            self.matrix[j, k] -= factor * self.matrix[i, k]
+                    if lead_i in positions_j:
+                        if self.poly_ring.characteristic() != 2:
+                            factor = self.matrix[j, positions_j.index(lead_i)] / self.matrix[i, lead_i]
+                            self.matrix.add_multiple_of_row(j, i, factor)
+                        else:
+                            self.matrix.add_multiple_of_row(j, i, 1)
                 except IndexError:
                     continue
+        t1 = time.time()        
+        print(f"[TIMER] Temps pour Gauss opti (matrice {nrows}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
 
     def verify_reductions_zero(self):
         """
@@ -171,7 +251,8 @@ class Mac:
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
         """
-        print(f"add lines for i:{i} f_i:{f_i}")
+        t0 = time.time()
+        #print(f"add lines for i:{i} f_i:{f_i}")
         for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
             if f_ii < i:
                 continue
@@ -181,18 +262,21 @@ class Mac:
                 x_lambda = 1
             else:
                 x_lambda = e.monomials()[0].variables()[0] #biggest variable in e
-                print(f"{e.monomials()}")
-            print(f"e: {e}, x_lambda:{x_lambda}")
+                #print(f"{e.monomials()}")
+            #print(f"e: {e}, x_lambda:{x_lambda}")
             for x_i in self.variables:
                 if x_i >= x_lambda:
                     if f_i.total_degree() == 1:
-                        if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
-                            self.add_line(f_i, i, x_i*e)
+                        #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
+                        self.add_line(f_i, i, x_i*e)
                     elif f_i.total_degree() == 2:
-                        if not self.F5_criterion(x_i*e, f_i, i, Mac_d_2):
-                            self.add_line(f_i, i, x_i*e)
-                            print(f"added ({x_i*e}, {f_i}) = {f_i*x_i*e}")
-            print()
+                        #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_2):
+                        self.add_line(f_i, i, x_i*e)
+                            #print(f"added ({x_i*e}, {f_i}) = {f_i*x_i*e}")
+            #print()
+
+        t1 = time.time()
+        print(f"[TIMER] Temps pour add_lines (deg {self.d}, poly {i}) : {t1 - t0:.4f} s")
         return
     
     def vector_to_polynomial(self, i):
@@ -203,7 +287,7 @@ class Mac:
         poly = 0
         for j in self.matrix.nonzero_positions_in_row(i):
             if j < len(self.monomial_inverse_search):
-                poly += self.monomial_inverse_search[j]
+                poly += self.matrix[i, j] * self.monomial_inverse_search[j]
             else:
                 print(f"Index {j} hors limites pour monomial_inverse_search")
         return poly
@@ -234,7 +318,7 @@ def update_gb(gb, Md, Mtilde):
     """
     if Md.matrix.nrows() != Mtilde.matrix.nrows():
         print("Euuuh erreur pas normal, Mtilde.nrows() == Md.nrows() normalement")
-    print(f"gb before: {gb}")
+    #print(f"gb before: {gb}")
     for i in range(Md.matrix.nrows()):
         Md_lm = Mtilde.row_lm(i)
         if Md.row_lm(i) != Md_lm:
@@ -255,7 +339,7 @@ def update_gb(gb, Md, Mtilde):
                 print(f"add poly in gb: {poly}")
                 gb.append(poly)
             """
-            print(f"add poly in gb: {poly}")
+            #print(f"add poly in gb: {poly}")
             gb.append(poly)
     return
 
@@ -268,21 +352,23 @@ def F5Matrix(F, dmax):
     We follow F5Matrix by Bardet in her PhD thesis p.21
     """
     m = len(F)
+    R = F[0].base_ring()
     n = F[0].parent().ngens()
     Mac_d = None
     Mac_d_1 = None
     Mac_d_2 = None
     gb = copy.copy(F)
 
-    print("Polynomials in F:")
-    for i in F:
-        print(i)
+    #print("Polynomials in F:")
+    #for i in F:
+    #    print(i)
 
     print(f"F5 for d={F[0].total_degree()}...{dmax}")
 
     for d in range(F[0].total_degree(), dmax+1):
         print(f"\n{'-' * 20} d={d} {'-' * 20}\n")
-        Mac_d = Mac(n, d)
+        t_deg_start = time.time()
+        Mac_d = Mac(n, d, R)
         Mac_d.monomial_ordered_list_deg_d(d)
         #Mac_d.monomial_ordered_list_deg_d(d-1)
         #Mac_d.monomial_ordered_list_deg_d(d-2)
@@ -290,22 +376,33 @@ def F5Matrix(F, dmax):
             f_i = F[i]
             if F[i].total_degree() == d:
                 Mac_d.add_line(f_i, i, 1)
-                print(f"added ({1}, {f_i}) = {f_i}")
+                #print(f"added ({1}, {f_i}) = {f_i}")
             else:
                 Mac_d.add_lines(f_i, i, Mac_d_1, Mac_d_2)
         tmp_Mac = copy.deepcopy(Mac_d)
-        print("Mac before Gauss")
-        print(Mac_d.matrix)
+        #print("Mac before Gauss")
+        #print(Mac_d.matrix)
         Mac_d.gauss()
-        print("Mac after Gauss")
-        print(Mac_d.matrix)
-        print()
-        update_gb(gb, tmp_Mac, Mac_d)
+        #print("Mac after Gauss")
+        #print(Mac_d.matrix)
+        #print()
+        #print(Mac_d.matrix == tmp_Mac.matrix)
+        #print()
+        tmp_Mac.gauss2()
+        #print("Mac after Gauss opti")
+        #print(tmp_Mac.matrix)
+        #update_gb(gb, tmp_Mac, Mac_d)
         reductions_to_zero = Mac_d.verify_reductions_zero()
-        print(f"number of reductions to 0 in degree {d}: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
+        reductions_to_zero2 = tmp_Mac.verify_reductions_zero()
+        print(f"Test si les deux résultats sont les mêmes: {Mac_d.matrix == tmp_Mac.matrix}")
+        print(f"number of reductions to 0 in degree {d} with opti Gauss: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
+        print(f"number of reductions to 0 in degree {d} with normal Gauss: {reductions_to_zero2} / {tmp_Mac.matrix.nrows()}")
         print(f"Corank of degree {d}: {Mac_d.corank()}")
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d
+
+        t_deg_end = time.time()
+        print(f"[TIMER] Temps total pour degré {d} : {t_deg_end - t_deg_start:.2f} s")
 
         """
         #Verifier que les conversions sont bonnes:
@@ -379,37 +476,37 @@ def generating_bardet_series(system):
     return term1 / term2
 
 if __name__ == '__main__':
-    #F = homogenized_ideal(doit(3, 4))
-    
+    F = homogenized_ideal(doit(6, 7))
+    """
     R.<x1, x2, x3> = PolynomialRing(GF(5), order='degrevlex')
-    F = [3*x1^2 + 4*x1*x2 + 2*x2^2,
+    F = [x2^2 + 4*x2*x3,
     2*x1^2 + 3*x1*x2 + 4*x2^2 + 3*x3^2,
-    x2^2 + 4*x2*x3]
-    
+    3*x1^2 + 4*x1*x2 + 2*x2^2]
+    """
     #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
-    #D = Ideal(F).degree_of_semi_regularity()
-    #print(generating_bardet_series(F))
+    D = Ideal(F).degree_of_semi_regularity()
+    print(generating_bardet_series(F))
     for i in F:
         print(i.total_degree())
     print(f"degree of semi-regularity of F: {D}")
 
-    gb = F5Matrix(F, 2)
+    gb = F5Matrix(F, 5)
 
     #for i in F:
     #    print(i in gb)
 
     #gb = [lift(p) for p in gb]
     print(len(gb))
+    #print(gb)
 
     gb2 = Ideal(gb).groebner_basis()
-
-    #print(gb)
 
     print(Ideal(gb).basis_is_groebner())
 
     gb = Ideal(F).groebner_basis()
     gb3 = Ideal(F).groebner_basis()
 
+    #print(gb)
     print(len(gb))
     print(len(gb3))
     print(len(gb2))

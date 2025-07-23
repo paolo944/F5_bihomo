@@ -1,4 +1,16 @@
 import copy
+import time
+
+def bi_degree(monomial):
+    half_n = monomial.parent().ngens() // 2
+    d1 = 0
+    d2 = 0
+    for i in monomial.exponents()[0][:half_n]:
+        d1 += i
+    for i in monomial.exponents()[0][half_n:]:
+        d2 += i
+
+    return (d1, d2)
 
 class Mac:
     def __init__(self, n, d1, d2):
@@ -12,7 +24,7 @@ class Mac:
         variables = [self.poly_ring(monom) for monom in monomials_str]
         #field_eq = [mon**2 + mon for mon in variables]
         #self.quotient_ring = self.poly_ring.quotient(field_eq)
-        #self.quotient_ring = self.poly_ring 
+        self.quotient_ring = self.poly_ring 
         self.variables = [self.poly_ring(monom) for monom in variables]
         self.d = (d1, d2)
         return
@@ -44,41 +56,37 @@ class Mac:
         return
     """
 
-    def monomial_ordered_list_deg_d(self, d1, d2):
+    def monomial_ordered_list_deg_d(self, d):
         """
-        Generate all the monomials of degree d in
-        GF(2).<x1,..,xn> using Sage's monomials_of_degree(d),
-        and add them to the hash list of the existing monomials.
+        Generate all monomials of degree d and add them to hash list
+        Fonction testé -> Correcte
         """
-        R = self.poly_ring
-        n = R.ngens()
-        monomials = []
+        R = self.quotient_ring
+        poly_ring = self.poly_ring
 
-        for exponents_x in IntegerVectors(d1, n//2):
-            for exponents_y in IntegerVectors(d2, n//2):
-                monomials.append(R.monomial(*(list(exponents_x) + list(exponents_y))))
+        monomials = poly_ring.monomials_of_degree(d)
+        monomials_in_R = sorted([R(m) for m in monomials], reverse=True)
 
-        monomials.sort()
         hash_size = len(self.monomial_hash_list)
-        self.monomial_hash_list = {m: i + hash_size for i, m in enumerate(monomials)} | self.monomial_hash_list
-        self.monomial_inverse_search += [m for m in monomials]
-        return
+        self.monomial_hash_list = {m: i for i, m in enumerate(monomials_in_R)} | self.monomial_hash_list
+        self.monomial_inverse_search += monomials_in_R
     
 
     def polynomial_to_vector(self, f):
         """
         Convert polynomial f to vector according to monomial ordering
+        Fonction testé -> Correcte
         """
         n = len(self.monomial_hash_list)
         vec = [0] * n
-        for monomial in f.monomials():
+        for monomial, coeff in zip(f.monomials(), f.coefficients()):
             try:
                 index = self.monomial_hash_list[monomial]
-                vec[index] = 1
+                vec[index] = coeff
             except KeyError:
                 print(f"Erreur: monôme {monomial} non trouvé dans hash_list")
                 continue
-        return vector(GF(2), vec)
+        return vector(f.base_ring(), vec)
 
     def row_lm(self, i):
         """
@@ -94,11 +102,7 @@ class Mac:
         """
         Add a row to the matrix
         """
-        d1, d2 = self.d
-        if d1 + d2 < 4:
-            new_row_matrix = matrix(GF(2), [vec])
-        else:
-            new_row_matrix = matrix(GF(2), [vec], sparse=True)
+        new_row_matrix = matrix(GF(2), 1, len(vec), [vec], sparse=False)
         
         if self.matrix is None:
             self.matrix = new_row_matrix
@@ -119,12 +123,17 @@ class Mac:
             sig_u, sig_i = M_prev.sig[j]
             if sig_i < i and M_prev.row_lm(j) == u:
                 return True
+            elif sig_i >= i:
+                return False
         return False
 
     def add_line(self, f, i, u):
         """
         Add line (u, f_i) to Macaulay matrix
         """
+        poly = u*f
+        if bi_degree(poly) != self.d:
+            return
         vec = self.polynomial_to_vector(u*f)
         self.add_row(vec)
         self.sig.append((u, i))
@@ -136,6 +145,8 @@ class Mac:
         Fonction testé -> Correcte
         """
         t0 = time.time()
+        self.matrix.echelonize(algorithm="m4ri", reduced=False)
+        """
         nrows = self.matrix.nrows()
         for i in range(nrows):
             try:
@@ -153,8 +164,9 @@ class Mac:
                             self.matrix.add_multiple_of_row(j, i, 1)
                 except IndexError:
                     continue
-        t1 = time.time()        
-        print(f"[TIMER] Temps pour Gauss opti (matrice {nrows}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
+        """
+        t1 = time.time()
+        print(f"[TIMER] Temps pour Gauss (matrice {self.matrix.nrows()}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
 
     def verify_reductions_zero(self):
         counter = 0
@@ -163,7 +175,7 @@ class Mac:
                 counter += 1
         return counter
 
-    def add_lines(self, f_i, i, Mac_d_1, Mac_d_2):
+    def add_lines(self, f_i, i, Mac_d_1):
         """
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
@@ -267,9 +279,8 @@ def F5Matrix(F, dmax):
     """
     m = len(F)
     n = F[0].parent().ngens()
-    Mac_d = []
-    Mac_d_1 = []
-    Mac_d_2 = []
+    Mac_d = None
+    Mac_d_old = []
     gb = []
 
     degs = integer_vectors_at_most(dmax)
@@ -280,25 +291,35 @@ def F5Matrix(F, dmax):
     print(f"F5 bihomogeneous for d={F[0].total_degree()}...{dmax}")
 
     for (d1, d2) in degs:
-        print(f"d=({d1}, {d2})")
+        print(f"\n{'-' * 20} d=({d1}, {d2}) {'-' * 20}\n")
+        t_deg_start = time.time()
         Mac_d = Mac(n, d1, d2)
-        Mac_d.monomial_ordered_list_deg_d(d1, d2)
+        Mac_d.monomial_ordered_list_deg_d(d1 + d2)
         #Mac_d.monomial_ordered_list_deg_d(d-1)
         #Mac_d.monomial_ordered_list_deg_d(d-2)
+        Mac_d_1 = None
+        if d1+d2 != 2:
+            for M in Mac_d_old:
+                if M.d == (d1 - 1, d2) or M.d == (d1, d2 - 1):
+                    print("Matrix")
+                    Mac_d_1 = M
+                    break
         for i in range(0, m):
             f_i = F[i]
             if d1+d2 == 2:
                 Mac_d.add_line(f_i, i, 1)
             else:
-                Mac_d.add_lines(f_i, i, Mac_d_1, Mac_d_2)
-        tmp_Mac = copy.deepcopy(Mac_d)
+                Mac_d.add_lines(f_i, i, Mac_d_1)
+        #tmp_Mac = copy.deepcopy(Mac_d)
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.matrix.nrows()}")
         print(f"Corank of degree ({d1}, {d2}): {Mac_d.corank()}")
         #update_gb(gb, tmp_Mac, Mac_d)
-        Mac_d_2 = Mac_d_1
-        Mac_d_1 = Mac_d
+        Mac_d_old.append(Mac_d)
+
+        t_deg_end = time.time()
+        print(f"[TIMER] Temps total pour bi-degré ({d1}, {d2}) : {t_deg_end - t_deg_start:.2f} s")
     return gb
 
 def doit(n, m):
@@ -393,7 +414,7 @@ if __name__ == '__main__':
         print(i)
     """
     #F = homogenized_ideal(doit(8, 9))
-    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
+    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_10_11.sobj"))
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
     for i in F:

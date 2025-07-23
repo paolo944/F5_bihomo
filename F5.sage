@@ -94,15 +94,23 @@ class Mac:
         Add a row to the matrix
         Fonction testé -> Correcte
         """
-        if self.d < 4:
-            new_row_matrix = matrix(self.poly_ring.base_ring(), [vec])
+        if self.poly_ring.characteristic() == 2:
+            if self.matrix == None:
+                self.matrix = matrix(GF(2), 1, len(vec), [vec], sparse=False)
+                return
+            else:
+                self.matrix = self.matrix.transpose().augment(vec).transpose()
+                return
         else:
-            new_row_matrix = matrix(self.poly_ring.base_ring(), [vec], sparse=True)
-        
-        if self.matrix is None:
-            self.matrix = new_row_matrix
-        else:
-            self.matrix = self.matrix.stack(new_row_matrix)
+            if self.d < 4:
+                new_row_matrix = matrix(self.poly_ring.base_ring(), [vec])
+            else:
+                new_row_matrix = matrix(self.poly_ring.base_ring(), [vec], sparse=True)
+
+            if self.matrix is None:
+                self.matrix = new_row_matrix
+            else:
+                self.matrix = self.matrix.stack(new_row_matrix)
         return
 
     def F5_criterion(self, u, f_i, i, M_prev):
@@ -208,7 +216,9 @@ class Mac:
         Simple Gauss sans pivot et sans backtracking avec l'élimination
         Fonction testé -> Correcte
         """
+        self.matrix.echelonize(algorithm="m4ri", reduced=False)
         t0 = time.time()
+        """
         nrows = self.matrix.nrows()
         for i in range(nrows):
             try:
@@ -226,8 +236,9 @@ class Mac:
                             self.matrix.add_multiple_of_row(j, i, 1)
                 except IndexError:
                     continue
+        """
         t1 = time.time()        
-        print(f"[TIMER] Temps pour Gauss opti (matrice {nrows}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
+        print(f"[TIMER] Temps pour Gauss (matrice {self.matrix.nrows()}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
 
     def verify_reductions_zero(self):
         """
@@ -419,8 +430,8 @@ def doit(n, m):
     x = V.random_element() 
     I = []
 
-    #monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
-    monomials_str = ['x'+str(i) for i in range(1, n+1)]
+    monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
+    #monomials_str = ['x'+str(i) for i in range(1, n+1)]
     R = PolynomialRing(GF(2), monomials_str, order='degrevlex')
     
     def random_quad_poly(R):
@@ -470,21 +481,21 @@ def generating_bardet_series(system):
     return term1 / term2
 
 if __name__ == '__main__':
-    #F = homogenized_ideal(doit(6, 7))
+    F = homogenized_ideal(doit(10, 11))
     """
     R.<x1, x2, x3> = PolynomialRing(GF(5), order='degrevlex')
     F = [x2^2 + 4*x2*x3,
     2*x1^2 + 3*x1*x2 + 4*x2^2 + 3*x3^2,
     3*x1^2 + 4*x1*x2 + 2*x2^2]
     """
-    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
+    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
     for i in F:
         print(i.total_degree())
     print(f"degree of semi-regularity of F: {D}")
 
-    gb = F5Matrix(F, 4)
+    gb = F5Matrix(F, D)
 
     #for i in F:
     #    print(i in gb)

@@ -140,103 +140,31 @@ class Mac:
         self.sig.append((u, i))
         return
 
-    def compact_matrix(self, mat_bool):
-        """
-        Version optimisée pour SageMath utilisant la vectorisation numpy.
-        Fonction testé -> Correcte
-        """
-        nrows, ncols = mat_bool.shape
-        n_blocks = (ncols + 63) // 64
-        compact = np.zeros((nrows, n_blocks), dtype=np.uint64)
-        
-        for block in range(n_blocks):
-            start = block * 64
-            end = min(start + 64, ncols)
-            slice_bool = mat_bool[:, start:end]
-            powers = np.uint64(1) << np.arange(end - start, dtype=np.uint64)
-            compact[:, block] = np.dot(slice_bool.astype(np.uint64), powers)
-        
-        return compact
-
-    def decomp_matrix(self, compact, original_shape):
-        """
-        Décompacte une matrice compacte vers sa forme booléenne originale.
-        Compatible SageMath.
-        Fonction testé -> Correcte
-        """
-        nrows, ncols = original_shape
-        mat_bool = np.zeros((nrows, ncols), dtype=bool)
-        
-        for i in range(nrows):
-            for j in range(ncols):
-                word = j // 64
-                bit = j % 64
-                # Conversion explicite pour SageMath
-                bit_value = int(compact[i, word]) & (1 << bit)
-                if bit_value != 0:
-                    mat_bool[i, j] = True
-                    
-        return mat_bool
-
     def gauss(self):
-        import gauss_avx2
-        t0 = time.time()
-
-        if self.poly_ring.characteristic() == 2:
-            nrows = self.matrix.nrows()
-            ncols = self.matrix.ncols()
-            
-            mat_bool = np.zeros((nrows, ncols), dtype=bool)
-            for i in range(nrows):
-                for j in range(ncols):
-                    element = self.matrix[i, j]
-                    mat_bool[i, j] = bool(element != 0)
-            
-            nrows = self.matrix.nrows()
-            ncols = self.matrix.ncols()
-            ncols_words = (ncols + 63) // 64
-
-            mat_compact = self.compact_matrix(mat_bool)
-            mat_compact = np.ascontiguousarray(mat_compact, dtype=np.uint64)
-            print(mat_compact)
-            gauss_avx2.gauss_elim_avx2(mat_compact, nrows, ncols_words)
-            mat_uncompact = self.decomp_matrix(mat_compact, mat_bool.shape)
-
-            for i in range(nrows):
-                for j in range(ncols):
-                    value = self.poly_ring(1) if mat_uncompact[i, j] else self.poly_ring(0)
-                    self.matrix[i, j] = value
-
-        t1 = time.time()        
-        print(f"[TIMER] Temps pour Gauss opti (matrice {nrows}x{ncols}) : {t1 - t0:.4f} s")
-
-
-    def gauss2(self):
         """
         Simple Gauss sans pivot et sans backtracking avec l'élimination
         Fonction testé -> Correcte
         """
-        self.matrix.echelonize(algorithm="m4ri", reduced=False)
-        t0 = time.time()
-        """
-        nrows = self.matrix.nrows()
-        for i in range(nrows):
-            try:
-                lead_i = self.matrix.nonzero_positions_in_row(i)[0]
-            except IndexError:
-                continue  # ligne nulle
-            for j in range(i+1, nrows):
+        if self.poly_ring.characteristic() == 2:
+            self.matrix.echelonize(algorithm="m4ri", reduced=False)
+            t0 = time.time()
+
+        else:
+            nrows = self.matrix.nrows()
+            for i in range(nrows):
                 try:
-                    positions_j = self.matrix.nonzero_positions_in_row(j)
-                    if lead_i in positions_j:
-                        if self.poly_ring.characteristic() != 2:
+                    lead_i = self.matrix.nonzero_positions_in_row(i)[0]
+                except IndexError:
+                    continue  # ligne nulle
+                for j in range(i+1, nrows):
+                    try:
+                        positions_j = self.matrix.nonzero_positions_in_row(j)
+                        if lead_i in positions_j:
                             factor = self.matrix[j, positions_j.index(lead_i)] / self.matrix[i, lead_i]
                             self.matrix.add_multiple_of_row(j, i, factor)
-                        else:
-                            self.matrix.add_multiple_of_row(j, i, 1)
-                except IndexError:
-                    continue
-        """
+                    except IndexError:
+                        continue
+ 
         t1 = time.time()        
         print(f"[TIMER] Temps pour Gauss (matrice {self.matrix.nrows()}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
 
@@ -256,7 +184,6 @@ class Mac:
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
         """
-        t0 = time.time()
         #print(f"add lines for i:{i} f_i:{f_i}")
         for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
             if f_ii < i:
@@ -279,9 +206,6 @@ class Mac:
                         self.add_line(f_i, i, x_i*e)
                             #print(f"added ({x_i*e}, {f_i}) = {f_i*x_i*e}")
             #print()
-
-        t1 = time.time()
-        print(f"[TIMER] Temps pour add_lines (deg {self.d}, poly {i}) : {t1 - t0:.4f} s")
         return
     
     def vector_to_polynomial(self, i):
@@ -375,33 +299,20 @@ def F5Matrix(F, dmax):
         t_deg_start = time.time()
         Mac_d = Mac(n, d, R)
         Mac_d.monomial_ordered_list_deg_d(d)
-        #Mac_d.monomial_ordered_list_deg_d(d-1)
-        #Mac_d.monomial_ordered_list_deg_d(d-2)
+        t0 = time.time()
         for i in range(0, m):
             f_i = F[i]
             if F[i].total_degree() == d:
                 Mac_d.add_line(f_i, i, 1)
-                #print(f"added ({1}, {f_i}) = {f_i}")
             else:
                 Mac_d.add_lines(f_i, i, Mac_d_1, Mac_d_2)
+        t1 = time.time()
+        print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
         #tmp_Mac = copy.deepcopy(Mac_d)
-        #print("Mac before Gauss")
-        #print(Mac_d.matrix)
-        Mac_d.gauss2()
-        #print("Mac after Gauss opti")
-        #print(Mac_d.matrix)
-        #print()
-        #print(Mac_d.matrix == tmp_Mac.matrix)
-        #print()
-        #tmp_Mac.gauss()
-        #print("Mac after Gauss")
-        #print(tmp_Mac.matrix)
+        Mac_d.gauss()
         #update_gb(gb, tmp_Mac, Mac_d)
         reductions_to_zero = Mac_d.verify_reductions_zero()
-        #reductions_to_zero2 = tmp_Mac.verify_reductions_zero()
-        #print(f"Test si les deux résultats sont les mêmes: {Mac_d.matrix == tmp_Mac.matrix}")
         print(f"number of reductions to 0 in degree {d} with normal Gauss: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
-        #print(f"number of reductions to 0 in degree {d} with opti Gauss: {reductions_to_zero2} / {tmp_Mac.matrix.nrows()}")
         print(f"Corank of degree {d}: {Mac_d.corank()}")
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d

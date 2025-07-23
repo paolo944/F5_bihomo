@@ -101,13 +101,27 @@ class Mac:
     def add_row(self, vec):
         """
         Add a row to the matrix
+        Fonction testé -> Correcte
         """
-        new_row_matrix = matrix(GF(2), 1, len(vec), [vec], sparse=False)
-        
-        if self.matrix is None:
-            self.matrix = new_row_matrix
+        if self.poly_ring.characteristic() == 2:
+            #print("char 2")
+            if self.matrix == None:
+                self.matrix = matrix(GF(2), 1, len(vec), [vec], sparse=False)
+                return
+            else:
+                self.matrix = self.matrix.transpose().augment(vec).transpose()
+                return
         else:
-            self.matrix = self.matrix.stack(new_row_matrix)
+            #print("not char 2")
+            if self.d < 4:
+                new_row_matrix = matrix(self.poly_ring.base_ring(), [vec])
+            else:
+                new_row_matrix = matrix(self.poly_ring.base_ring(), [vec], sparse=True)
+
+            if self.matrix is None:
+                self.matrix = new_row_matrix
+            else:
+                self.matrix = self.matrix.stack(new_row_matrix)
         return
 
     def F5_criterion(self, u, f_i, i, M_prev):
@@ -133,6 +147,7 @@ class Mac:
         """
         poly = u*f
         if bi_degree(poly) != self.d:
+            #print("not bi-degree")
             return
         vec = self.polynomial_to_vector(u*f)
         self.add_row(vec)
@@ -144,28 +159,27 @@ class Mac:
         Simple Gauss sans pivot et sans backtracking avec l'élimination
         Fonction testé -> Correcte
         """
-        t0 = time.time()
-        self.matrix.echelonize(algorithm="m4ri", reduced=False)
-        """
-        nrows = self.matrix.nrows()
-        for i in range(nrows):
-            try:
-                lead_i = self.matrix.nonzero_positions_in_row(i)[0]
-            except IndexError:
-                continue  # ligne nulle
-            for j in range(i+1, nrows):
+        if self.poly_ring.characteristic() == 2:
+            self.matrix.echelonize(algorithm="m4ri", reduced=False)
+            t0 = time.time()
+
+        else:
+            nrows = self.matrix.nrows()
+            for i in range(nrows):
                 try:
-                    positions_j = self.matrix.nonzero_positions_in_row(j)
-                    if lead_i in positions_j:
-                        if self.poly_ring.characteristic() != 2:
+                    lead_i = self.matrix.nonzero_positions_in_row(i)[0]
+                except IndexError:
+                    continue  # ligne nulle
+                for j in range(i+1, nrows):
+                    try:
+                        positions_j = self.matrix.nonzero_positions_in_row(j)
+                        if lead_i in positions_j:
                             factor = self.matrix[j, positions_j.index(lead_i)] / self.matrix[i, lead_i]
                             self.matrix.add_multiple_of_row(j, i, factor)
-                        else:
-                            self.matrix.add_multiple_of_row(j, i, 1)
-                except IndexError:
-                    continue
-        """
-        t1 = time.time()
+                    except IndexError:
+                        continue
+ 
+        t1 = time.time()        
         print(f"[TIMER] Temps pour Gauss (matrice {self.matrix.nrows()}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
 
     def verify_reductions_zero(self):
@@ -174,25 +188,42 @@ class Mac:
             if self.matrix.nonzero_positions_in_row(i) == []:
                 counter += 1
         return counter
+    
+    def biggest_x(self, monomial):
+        if monomial == 1 or monomial == 0:
+            return monomial
+        half_n = self.poly_ring.ngens()
+        exp = monomial.exponents()[0][:half_n]
+        for i, k in enumerate(exp):
+            if k == 1:
+                return self.variables[i]
+
+    def biggest_y(self, monomial):
+        if monomial == 1 or monomial == 0:
+            return monomial
+        half_n = self.poly_ring.ngens()
+        exp = monomial.exponents()[0][half_n:]
+        for i, k in enumerate(exp):
+            if k == 1:
+                return self.variables[half_n + i]
 
     def add_lines(self, f_i, i, Mac_d_1):
         """
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
         """
-        t0 = time.time()
-        #print(f"add lines for i:{i} f_i:{f_i}")
         for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
             if f_ii < i:
                 continue
             elif f_ii > i:
                 return
-            if e == 1:
-                x_lambda = 1
+            if Mac_d_1.d == (self.d[0] - 1, self.d[1]):
+                x_lambda = self.biggest_x(e)
+            elif Mac_d_1.d == (self.d[0], self.d[1] - 1):
+                x_lambda = self.biggest_y(e)
             else:
-                x_lambda = e.monomials()[0].variables()[0] #biggest variable in e
-                #print(f"{e.monomials()}")
-            #print(f"e: {e}, x_lambda:{x_lambda}")
+                print("Oula !! grosse erreur")
+
             for x_i in self.variables:
                 if x_i >= x_lambda:
                     if f_i.total_degree() == 1:
@@ -201,11 +232,9 @@ class Mac:
                     elif f_i.total_degree() == 2:
                         #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_2):
                         self.add_line(f_i, i, x_i*e)
-                            #print(f"added ({x_i*e}, {f_i}) = {f_i*x_i*e}")
+                        #print(f"added ({x_i*e}, {f_i}) = {f_i*x_i*e}")
             #print()
 
-        t1 = time.time()
-        print(f"[TIMER] Temps pour add_lines (deg {self.d}, poly {i}) : {t1 - t0:.4f} s")
         return
     
     def vector_to_polynomial(self, i):
@@ -295,13 +324,11 @@ def F5Matrix(F, dmax):
         t_deg_start = time.time()
         Mac_d = Mac(n, d1, d2)
         Mac_d.monomial_ordered_list_deg_d(d1 + d2)
-        #Mac_d.monomial_ordered_list_deg_d(d-1)
-        #Mac_d.monomial_ordered_list_deg_d(d-2)
         Mac_d_1 = None
+        t0 = time.time()
         if d1+d2 != 2:
             for M in Mac_d_old:
                 if M.d == (d1 - 1, d2) or M.d == (d1, d2 - 1):
-                    print("Matrix")
                     Mac_d_1 = M
                     break
         for i in range(0, m):
@@ -310,6 +337,8 @@ def F5Matrix(F, dmax):
                 Mac_d.add_line(f_i, i, 1)
             else:
                 Mac_d.add_lines(f_i, i, Mac_d_1)
+        t1 = time.time()
+        print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
         #tmp_Mac = copy.deepcopy(Mac_d)
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()

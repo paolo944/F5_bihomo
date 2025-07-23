@@ -1,26 +1,28 @@
 import copy
 import time
 
-def bi_degree(monomial):
-    half_n = monomial.parent().ngens() // 2
+def bi_degree(monomial, nx, ny):
     d1 = 0
     d2 = 0
-    for i in monomial.exponents()[0][:half_n]:
+    for i in monomial.exponents()[0][:nx]:
         d1 += i
-    for i in monomial.exponents()[0][half_n:]:
+    for i in monomial.exponents()[0][ny-1:]:
         d2 += i
 
     return (d1, d2)
 
 class Mac:
-    def __init__(self, n, d1, d2):
+    def __init__(self, d1, d2, F, nx, ny):
         self.matrix = None #The Macaulay matrix
         self.sig = [] #Array containing to know the index of the polynomial used in the line of this array's index
         self.monomial_hash_list = {} #To know which column index correspond to this monomial
         self.monomial_inverse_search = [] #To know which monomial correspond the column i
+        self.nx = nx
+        self.ny = ny
 
-        monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
-        self.poly_ring = PolynomialRing(GF(2), monomials_str, order='degrevlex')
+        monomials_str = ['x'+str(i) for i in range(1, nx + 1)] + ['y'+str(i) for i in range(1, ny + 1)]
+        #monomials_str = ['x'+str(i) for i in range(1, n + 1)]
+        self.poly_ring = PolynomialRing(F, monomials_str, order='degrevlex')
         variables = [self.poly_ring(monom) for monom in monomials_str]
         #field_eq = [mon**2 + mon for mon in variables]
         #self.quotient_ring = self.poly_ring.quotient(field_eq)
@@ -67,7 +69,7 @@ class Mac:
         monomials = poly_ring.monomials_of_degree(d)
         monomials_in_R = []
         for monomial in monomials:
-            if bi_degree(monomial) == self.d:
+            if bi_degree(monomial, self.nx, self.ny) == self.d:
                 monomials_in_R.append(R(monomial))
         
         monomials_in_R = sorted(monomials_in_R, reverse=True)
@@ -117,7 +119,7 @@ class Mac:
                 return
         else:
             #print("not char 2")
-            if self.d < 4:
+            if self.d[0] + self.d[1] < 4:
                 new_row_matrix = matrix(self.poly_ring.base_ring(), [vec])
             else:
                 new_row_matrix = matrix(self.poly_ring.base_ring(), [vec], sparse=True)
@@ -150,8 +152,8 @@ class Mac:
         Add line (u, f_i) to Macaulay matrix
         """
         poly = u*f
-        if bi_degree(poly) != self.d:
-            #print("not bi-degree")
+        if bi_degree(poly, self.nx, self.ny) != self.d:
+            print("not bi-degree")
             return
         vec = self.polynomial_to_vector(u*f)
         self.add_row(vec)
@@ -163,9 +165,10 @@ class Mac:
         Simple Gauss sans pivot et sans backtracking avec l'élimination
         Fonction testé -> Correcte
         """
+        t0 = time.time()
+
         if self.poly_ring.characteristic() == 2:
             self.matrix.echelonize(algorithm="m4ri", reduced=False)
-            t0 = time.time()
 
         else:
             nrows = self.matrix.nrows()
@@ -196,8 +199,7 @@ class Mac:
     def biggest_x(self, monomial):
         if monomial == 1 or monomial == 0:
             return monomial
-        half_n = self.poly_ring.ngens()
-        exp = monomial.exponents()[0][:half_n]
+        exp = monomial.exponents()[0][:self.nx]
         for i, k in enumerate(exp):
             if k == 1:
                 return self.variables[i]
@@ -205,30 +207,36 @@ class Mac:
     def biggest_y(self, monomial):
         if monomial == 1 or monomial == 0:
             return monomial
-        half_n = self.poly_ring.ngens()
-        exp = monomial.exponents()[0][half_n:]
+        exp = monomial.exponents()[0][self.ny:]
         for i, k in enumerate(exp):
             if k == 1:
-                return self.variables[half_n + i]
+                return self.variables[self.ny + i]
 
     def add_lines(self, f_i, i, Mac_d_1):
         """
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
         """
+        if Mac_d_1.d == (self.d[0] - 1, self.d[1]):
+            degree_to_add = 0
+            variables = self.variables[:self.poly_ring.ngens() // 2]
+        elif Mac_d_1.d == (self.d[0], self.d[1] - 1):
+            degree_to_add = 1
+            variables = self.variables[self.poly_ring.ngens() // 2:]
+
         for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
             if f_ii < i:
                 continue
             elif f_ii > i:
                 return
-            if Mac_d_1.d == (self.d[0] - 1, self.d[1]):
+            if degree_to_add == 0:
                 x_lambda = self.biggest_x(e)
-            elif Mac_d_1.d == (self.d[0], self.d[1] - 1):
+            elif degree_to_add == 1:
                 x_lambda = self.biggest_y(e)
             else:
                 print("Oula !! grosse erreur")
 
-            for x_i in self.variables:
+            for x_i in variables:
                 if x_i >= x_lambda:
                     if f_i.total_degree() == 1:
                         #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
@@ -303,7 +311,7 @@ def integer_vectors_at_most(max_sum):
             result.append(v)
     return result
 
-def F5Matrix(F, dmax):
+def F5Matrix(F, dmax, nx, ny):
     """
     F is homogeneous polynomials ordered such that deg(f_i) < deg(f_j) forall i, j
     such that i < j
@@ -311,31 +319,36 @@ def F5Matrix(F, dmax):
     F is supposed to be a quadratic system, so deg(f_i) <= 2 forall 0 <= i < m
     We follow F5Matrix by Bardet in her PhD thesis p.21
     """
+    from sage.rings.polynomial.polydict import ETuple
     m = len(F)
+    R = F[0].base_ring()
     n = F[0].parent().ngens()
     Mac_d = None
     Mac_d_old = []
     gb = []
+    bi_hilbert = hilbert_biseries(n//2, n//2, len(F)).monomial_coefficients()
 
     degs = integer_vectors_at_most(dmax)
+    degs.pop(0)
 
     print(f"F5 bihomogeneous for d={F[0].total_degree()}...{dmax}")
 
     for (d1, d2) in degs:
         print(f"\n{'-' * 20} d=({d1}, {d2}) {'-' * 20}\n")
         t_deg_start = time.time()
-        Mac_d = Mac(n, d1, d2)
+        Mac_d = Mac(d1, d2, R, nx, ny)
         Mac_d.monomial_ordered_list_deg_d(d1 + d2)
         Mac_d_1 = None
         t0 = time.time()
-        if d1+d2 != 2:
+        if (d1 == 0 and d2 != 0) or (d2 == 0 and d1 != 0):
+            print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)} ----- Value in Hilbert Biseries: {bi_hilbert[ETuple([d1, d2])]}")
+            continue
+        elif d1+d2 != 2:
             for M in Mac_d_old:
                 if M.d == (d1 - 1, d2) or M.d == (d1, d2 - 1):
                     Mac_d_1 = M
+                    print(f"Matrix used for Mac_d_1 is of degree: {Mac_d_1.d}")
                     break
-        if d1 == 0 or d2 == 0:
-            print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)}")
-            continue
         for i in range(0, m):
             f_i = F[i]
             if d1+d2 == 2:
@@ -348,7 +361,7 @@ def F5Matrix(F, dmax):
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.matrix.nrows()}")
-        print(f"Corank of degree ({d1}, {d2}): {Mac_d.corank()}")
+        print(f"Corank of degree ({d1}, {d2}): {Mac_d.corank()} ----- Value in Hilbert Biseries: {bi_hilbert[ETuple([d1, d2])]}")
         #update_gb(gb, tmp_Mac, Mac_d)
         Mac_d_old.append(Mac_d)
 
@@ -356,36 +369,38 @@ def F5Matrix(F, dmax):
         print(f"[TIMER] Temps total pour bi-degré ({d1}, {d2}) : {t_deg_end - t_deg_start:.2f} s")
     return gb
 
-def doit(n, m):
+def doit_bilinear(n_x, n_y, m):
     """
-    Generate random system of n variables and m
-    polynomials on GF(2)
-    Stolen from hpXbred :)
+    Génère m polynômes bilinéaires homogènes de bi-degré (1,1)
+    en n_x variables x_i et n_y variables y_j sur GF(2),
+    avec une solution plantée.
     """
-    # planted solution
-    V = GF(2)**n 
-    x = V.random_element() 
-    I = []
+    K = GF(2)
 
-    monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
-    R = PolynomialRing(GF(2), monomials_str, order='degrevlex')
+    x_vars = ['x{}'.format(i) for i in range(1, n_x + 1)]
+    y_vars = ['y{}'.format(j) for j in range(1, n_y + 1)]
+    R = PolynomialRing(K, x_vars + y_vars, order='degrevlex')
     
-    def random_quad_poly(R):
-        K = R.base_ring()
-        v = vector(R.gens())
-        n = len(v) 
-        Mq = matrix.random(K, n, n)
-        Ml = matrix.random(K, 1, n)
-        f = v * Mq * v + (Ml*v)[0] + K.random_element()
-        return f
-    
-    # m random polynomials
-    for _ in range(m): 
-        f = random_quad_poly(R) 
-        f += f(*x) 
-        I.append(f)
+    # Générez une solution plantée aléatoire
+    x_sol = vector(K, [K.random_element() for _ in range(n_x)])
+    y_sol = vector(K, [K.random_element() for _ in range(n_y)])
 
-    return I
+    x_gens = vector(R, R.gens()[:n_x])
+    y_gens = vector(R, R.gens()[n_x:])
+    
+    polynomials = []
+
+    for _ in range(m):
+        A = random_matrix(K, n_x, n_y)
+
+        f = (x_gens * A * y_gens)[0]
+
+        if f(*x_sol.list(), *y_sol.list()) == 1:
+            f += 1
+
+        polynomials.append(f)
+
+    return polynomials
 
 def homogenized_ideal(system):
     """
@@ -447,19 +462,29 @@ if __name__ == '__main__':
     for i in test:
         print(i)
     """
-    #F = homogenized_ideal(doit(8, 9))
-    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_14_15.sobj"))
-    D = Ideal(F).degree_of_semi_regularity()
+    F = homogenized_ideal(doit_bilinear(3, 4, 8))
+    """
+    R.<x1, x2, x3, y1, y2, y3, y4> = PolynomialRing(GF(7), order='degrevlex')
+    F = [x1*y1 + 5*x2*y1 + 4*x3*y1 + 5*x1*y2 + 3*x2*y2 + x1*y3 + 4*x2*y3 + 5*x3*y3 + 5*x1*y4 + x2*y4 + 2*x3*y4,
+    2*x1*y1 + 4*x2*y1 + 6*x3*y1 + 2*x1*y2 + 5*x2*y2 + 6*x1*y3 + 4*x3*y3 + 3*x1*y4 + 2*x2*y4 + 4*x3*y4,
+    5*x1*y1 + 5*x2*y1 + 2*x3*y1 + 4*x1*y2 + 6*x2*y2 + 4*x3*y2 + 6*x2*y3 + 4*x3*y3 + x1*y4 + x2*y4 + 5*x3*y4,
+    6*x1*y1 + 5*x3*y1 + 4*x1*y2 + 5*x2*y2 + x3*y2 + x1*y3 + x2*y3 + 6*x3*y3 + 2*x1*y4 + 4*x2*y4 + 5*x3*y4,
+    6*x1*y1 + 3*x2*y1 + 6*x3*y1 + 3*x1*y2 + 5*x3*y2 + 2*x1*y3 + 4*x2*y3 + 5*x3*y3 + 2*x1*y4 + 4*x2*y4 + 5*x3*y4
+    ]
+    """
+    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_14_15.sobj"))
+    #D = Ideal(F).degree_of_semi_regularity()
     print(f"---------------Generating Serie Bardet: {generating_bardet_series(F)}\n\n")
     series_ring.<z> = PowerSeriesRing(ZZ)
     hilbert_series = series_ring(Ideal(F).hilbert_series())
     print(f"---------------Hilbert Series: {hilbert_series}\n\n")
 
-    half_n = F[0].parent().ngens() // 2
+    nx = 3
+    ny = 4
     print(f"---------------degree of semi-regularity of F: {D}\n\n")
-    print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(half_n, half_n, len(F))}\n\n")
+    print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(nx, ny, len(F))}\n\n")
 
-    gb = F5Matrix(F, half_n + 2)
+    gb = F5Matrix(F, min(nx, ny) + 2, nx, ny)
 
     """
     print(len(gb))

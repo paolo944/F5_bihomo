@@ -145,9 +145,9 @@ class Mac:
         Simple Gauss sans pivot et sans backtracking avec l'élimination
         Fonction testé -> Correcte
         """
+        t0 = time.time()
         if self.poly_ring.characteristic() == 2:
             self.matrix.echelonize(algorithm="m4ri", reduced=False)
-            t0 = time.time()
 
         else:
             nrows = self.matrix.nrows()
@@ -392,22 +392,22 @@ def generating_bardet_series(system):
     return term1 / term2
 
 if __name__ == '__main__':
-    #F = homogenized_ideal(doit(8, 9))
+    F = homogenized_ideal(doit(14, 15))
     """
     R.<x1, x2, x3> = PolynomialRing(GF(5), order='degrevlex')
     F = [x2^2 + 4*x2*x3,
     2*x1^2 + 3*x1*x2 + 4*x2^2 + 3*x3^2,
     3*x1^2 + 4*x1*x2 + 2*x2^2]
     """
-    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_12_13.sobj"))
-    series_ring.<z> = PowerSeriesRing(ZZ)
-    hilbert_series = series_ring(Ideal(F).hilbert_series())
-    print(f"Hilbert Series: {hilbert_series}")
+    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_12_13.sobj"))
+    #series_ring.<z> = PowerSeriesRing(ZZ)
+    #hilbert_series = series_ring(Ideal(F).hilbert_series())
+    #print(f"Hilbert Series: {hilbert_series}")
     D = Ideal(F).degree_of_semi_regularity()
-    print(generating_bardet_series(F))
-    for i in F:
-        print(i.total_degree())
-    print(f"degree of semi-regularity of F: {D}")
+    #print(generating_bardet_series(F))
+    #for i in F:
+    #    print(i.total_degree())
+    #print(f"degree of semi-regularity of F: {D}")
 
     gb = F5Matrix(F, D)
 

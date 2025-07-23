@@ -2,13 +2,9 @@ import copy
 import time
 
 def bi_degree(monomial, nx, ny):
-    d1 = 0
-    d2 = 0
-    for i in monomial.exponents()[0][:nx]:
-        d1 += i
-    for i in monomial.exponents()[0][ny-1:]:
-        d2 += i
-
+    exponents = monomial.exponents()[0]
+    d1 = sum(exponents[:nx])
+    d2 = sum(exponents[nx:nx+ny])
     return (d1, d2)
 
 class Mac:
@@ -153,7 +149,7 @@ class Mac:
         """
         poly = u*f
         if bi_degree(poly, self.nx, self.ny) != self.d:
-            print("not bi-degree")
+            #print("not bi-degree")
             return
         vec = self.polynomial_to_vector(u*f)
         self.add_row(vec)
@@ -326,8 +322,8 @@ def F5Matrix(F, dmax, nx, ny):
     Mac_d = None
     Mac_d_old = []
     gb = []
-    bi_hilbert = hilbert_biseries(n//2, n//2, len(F)).monomial_coefficients()
-
+    bi_hilbert = hilbert_biseries(nx, ny, len(F)).monomial_coefficients()
+    
     degs = integer_vectors_at_most(dmax)
     degs.pop(0)
 
@@ -341,7 +337,10 @@ def F5Matrix(F, dmax, nx, ny):
         Mac_d_1 = None
         t0 = time.time()
         if (d1 == 0 and d2 != 0) or (d2 == 0 and d1 != 0):
-            print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)} ----- Value in Hilbert Biseries: {bi_hilbert[ETuple([d1, d2])]}")
+            try:
+                print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)} ----- Value in Hilbert Biseries: {bi_hilbert[ETuple([d1, d2])]}")
+            except KeyError:
+                continue
             continue
         elif d1+d2 != 2:
             for M in Mac_d_old:
@@ -361,7 +360,10 @@ def F5Matrix(F, dmax, nx, ny):
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.matrix.nrows()}")
-        print(f"Corank of degree ({d1}, {d2}): {Mac_d.corank()} ----- Value in Hilbert Biseries: {bi_hilbert[ETuple([d1, d2])]}")
+        try:
+            print(f"Corank of degree ({d1}, {d2}): {Mac_d.corank()} ----- Value in Hilbert Biseries: {bi_hilbert[ETuple([d1, d2])]}")
+        except KeyError:
+            print(f"Corank of degree ({d1}, {d2}): {Mac_d.corank()} ----- Value in Hilbert Biseries: 0")
         #update_gb(gb, tmp_Mac, Mac_d)
         Mac_d_old.append(Mac_d)
 
@@ -373,32 +375,29 @@ def doit_bilinear(n_x, n_y, m):
     """
     Génère m polynômes bilinéaires homogènes de bi-degré (1,1)
     en n_x variables x_i et n_y variables y_j sur GF(2),
-    avec une solution plantée.
+    avec une solution plantée qui annule tous les polynômes.
     """
     K = GF(2)
 
     x_vars = ['x{}'.format(i) for i in range(1, n_x + 1)]
     y_vars = ['y{}'.format(j) for j in range(1, n_y + 1)]
     R = PolynomialRing(K, x_vars + y_vars, order='degrevlex')
-    
-    # Générez une solution plantée aléatoire
+
+    # Solution plantée
     x_sol = vector(K, [K.random_element() for _ in range(n_x)])
     y_sol = vector(K, [K.random_element() for _ in range(n_y)])
 
     x_gens = vector(R, R.gens()[:n_x])
     y_gens = vector(R, R.gens()[n_x:])
-    
+
     polynomials = []
 
-    for _ in range(m):
+    while len(polynomials) < m:
         A = random_matrix(K, n_x, n_y)
+        f = x_gens * A * y_gens
 
-        f = (x_gens * A * y_gens)[0]
-
-        if f(*x_sol.list(), *y_sol.list()) == 1:
-            f += 1
-
-        polynomials.append(f)
+        if f(*x_sol.list(), *y_sol.list()) == 0:
+            polynomials.append(f)
 
     return polynomials
 
@@ -462,7 +461,7 @@ if __name__ == '__main__':
     for i in test:
         print(i)
     """
-    F = homogenized_ideal(doit_bilinear(3, 4, 8))
+    F = homogenized_ideal(doit_bilinear(7, 5, 12))
     """
     R.<x1, x2, x3, y1, y2, y3, y4> = PolynomialRing(GF(7), order='degrevlex')
     F = [x1*y1 + 5*x2*y1 + 4*x3*y1 + 5*x1*y2 + 3*x2*y2 + x1*y3 + 4*x2*y3 + 5*x3*y3 + 5*x1*y4 + x2*y4 + 2*x3*y4,
@@ -479,8 +478,8 @@ if __name__ == '__main__':
     hilbert_series = series_ring(Ideal(F).hilbert_series())
     print(f"---------------Hilbert Series: {hilbert_series}\n\n")
 
-    nx = 3
-    ny = 4
+    nx = 7
+    ny = 5
     print(f"---------------degree of semi-regularity of F: {D}\n\n")
     print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(nx, ny, len(F))}\n\n")
 

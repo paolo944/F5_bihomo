@@ -65,12 +65,16 @@ class Mac:
         poly_ring = self.poly_ring
 
         monomials = poly_ring.monomials_of_degree(d)
-        monomials_in_R = sorted([R(m) for m in monomials], reverse=True)
+        monomials_in_R = []
+        for monomial in monomials:
+            if bi_degree(monomial) == self.d:
+                monomials_in_R.append(R(monomial))
+        
+        monomials_in_R = sorted(monomials_in_R, reverse=True)
 
         hash_size = len(self.monomial_hash_list)
         self.monomial_hash_list = {m: i for i, m in enumerate(monomials_in_R)} | self.monomial_hash_list
-        self.monomial_inverse_search += monomials_in_R
-    
+        self.monomial_inverse_search += monomials_in_R    
 
     def polynomial_to_vector(self, f):
         """
@@ -266,6 +270,7 @@ class Mac:
             if self.matrix.nonzero_positions_in_row(i) != []:
                 nnz_rows += 1
 
+        #return nnz_columns - nnz_rows
         return self.matrix.ncols() - nnz_rows
 
 def update_gb(gb, Md, Mtilde):
@@ -294,7 +299,7 @@ def integer_vectors_at_most(max_sum):
     """Génère tous les vecteurs d'entiers de longueur donnée avec somme ≤ max_sum"""
     result = []
     for s in range(max_sum + 1):
-        for v in IntegerVectors(s, 2, min_part=1):
+        for v in IntegerVectors(s, 2):
             result.append(v)
     return result
 
@@ -314,9 +319,6 @@ def F5Matrix(F, dmax):
 
     degs = integer_vectors_at_most(dmax)
 
-    for i in degs:
-        print(i)
-
     print(f"F5 bihomogeneous for d={F[0].total_degree()}...{dmax}")
 
     for (d1, d2) in degs:
@@ -331,6 +333,9 @@ def F5Matrix(F, dmax):
                 if M.d == (d1 - 1, d2) or M.d == (d1, d2 - 1):
                     Mac_d_1 = M
                     break
+        if d1 == 0 or d2 == 0:
+            print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)}")
+            continue
         for i in range(0, m):
             f_i = F[i]
             if d1+d2 == 2:
@@ -443,15 +448,16 @@ if __name__ == '__main__':
         print(i)
     """
     #F = homogenized_ideal(doit(8, 9))
-    F = homogenized_ideal(load("../MPCItH_SBC/system/sage/system_bilin_12_13.sobj"))
+    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_14_15.sobj"))
     D = Ideal(F).degree_of_semi_regularity()
-    print(generating_bardet_series(F))
-    for i in F:
-        print(i.total_degree())
+    print(f"---------------Generating Serie Bardet: {generating_bardet_series(F)}\n\n")
+    series_ring.<z> = PowerSeriesRing(ZZ)
+    hilbert_series = series_ring(Ideal(F).hilbert_series())
+    print(f"---------------Hilbert Series: {hilbert_series}\n\n")
 
     half_n = F[0].parent().ngens() // 2
-    print(f"degree of semi-regularity of F: {D}")
-    print(f"Série génératrice bilinéaire: {hilbert_biseries(half_n, half_n, len(F))}")
+    print(f"---------------degree of semi-regularity of F: {D}\n\n")
+    print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(half_n, half_n, len(F))}\n\n")
 
     gb = F5Matrix(F, half_n + 2)
 

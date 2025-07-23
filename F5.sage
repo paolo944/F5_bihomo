@@ -399,7 +399,7 @@ if __name__ == '__main__':
     2*x1^2 + 3*x1*x2 + 4*x2^2 + 3*x3^2,
     3*x1^2 + 4*x1*x2 + 2*x2^2]
     """
-    F = homogenized_ideal(load("../MPCItH_SBC/system/sage/system_bilin_12_13.sobj"))
+    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_12_13.sobj"))
     series_ring.<z> = PowerSeriesRing(ZZ)
     hilbert_series = series_ring(Ideal(F).hilbert_series())
     print(f"Hilbert Series: {hilbert_series}")

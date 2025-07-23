@@ -229,15 +229,15 @@ class Mac:
         nnz_columns = 0
         nnz_rows = 0
         
-        for i in range(self.matrix.ncols()):
-            if self.matrix.nonzero_positions_in_column(i) != []:
-                nnz_columns += 1
+        #for i in range(self.matrix.ncols()):
+        #    if self.matrix.nonzero_positions_in_column(i) != []:
+        #        nnz_columns += 1
 
         for i in range(self.matrix.nrows()):
             if self.matrix.nonzero_positions_in_row(i) != []:
                 nnz_rows += 1
 
-        return nnz_columns - nnz_rows
+        return self.matrix.ncols() - nnz_rows
 
 def update_gb(gb, Md, Mtilde):
     """
@@ -392,14 +392,17 @@ def generating_bardet_series(system):
     return term1 / term2
 
 if __name__ == '__main__':
-    F = homogenized_ideal(doit(10, 11))
+    #F = homogenized_ideal(doit(8, 9))
     """
     R.<x1, x2, x3> = PolynomialRing(GF(5), order='degrevlex')
     F = [x2^2 + 4*x2*x3,
     2*x1^2 + 3*x1*x2 + 4*x2^2 + 3*x3^2,
     3*x1^2 + 4*x1*x2 + 2*x2^2]
     """
-    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_8_9.sobj"))
+    F = homogenized_ideal(load("../MPCItH_SBC/system/sage/system_bilin_12_13.sobj"))
+    series_ring.<z> = PowerSeriesRing(ZZ)
+    hilbert_series = series_ring(Ideal(F).hilbert_series())
+    print(f"Hilbert Series: {hilbert_series}")
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
     for i in F:

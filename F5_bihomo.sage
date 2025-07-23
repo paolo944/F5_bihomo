@@ -258,15 +258,15 @@ class Mac:
         nnz_columns = 0
         nnz_rows = 0
         
-        for i in range(self.matrix.ncols()):
-            if self.matrix.nonzero_positions_in_column(i) != []:
-                nnz_columns += 1
+        #for i in range(self.matrix.ncols()):
+        #    if self.matrix.nonzero_positions_in_column(i) != []:
+        #        nnz_columns += 1
 
         for i in range(self.matrix.nrows()):
             if self.matrix.nonzero_positions_in_row(i) != []:
                 nnz_rows += 1
 
-        return nnz_columns - nnz_rows
+        return self.matrix.ncols() - nnz_rows
 
 def update_gb(gb, Md, Mtilde):
     if Md.matrix.nrows() != Mtilde.matrix.nrows():
@@ -443,7 +443,7 @@ if __name__ == '__main__':
         print(i)
     """
     #F = homogenized_ideal(doit(8, 9))
-    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_10_11.sobj"))
+    F = homogenized_ideal(load("../MPCItH_SBC/system/sage/system_bilin_12_13.sobj"))
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
     for i in F:

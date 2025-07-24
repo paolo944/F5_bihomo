@@ -7,6 +7,12 @@ def bi_degree(monomial, nx, ny):
     d2 = sum(exponents[nx:nx+ny])
     return (d1, d2)
 
+def number_of_monomials_bidegree(nx, ny, d1, d2):
+    y = binomial(ny + d2 - 1, d2)
+    x = binomial(nx + d1 - 1, d1)
+    return x*y
+
+
 class Mac:
     def __init__(self, d1, d2, F, nx, ny):
         self.matrix = None #The Macaulay matrix
@@ -70,9 +76,10 @@ class Mac:
         
         monomials_in_R = sorted(monomials_in_R, reverse=True)
 
-        hash_size = len(self.monomial_hash_list)
         self.monomial_hash_list = {m: i for i, m in enumerate(monomials_in_R)} | self.monomial_hash_list
-        self.monomial_inverse_search += monomials_in_R    
+        self.monomial_inverse_search += monomials_in_R
+
+        assert len(self.monomial_inverse_search) == len(self.monomial_hash_list) and len(self.monomial_hash_list) == number_of_monomials_bidegree(self.nx, self.ny, self.d[0], self.d[1]), "Erreur dans la génération de monomes, le compte n'est pas bon" 
 
     def polynomial_to_vector(self, f):
         """
@@ -462,7 +469,7 @@ if __name__ == '__main__':
     for i in test:
         print(i)
     """
-    F = homogenized_ideal(doit_bilinear(7, 5, 12))
+    #F = homogenized_ideal(doit_bilinear(7, 5, 12))
     """
     R.<x1, x2, x3, y1, y2, y3, y4> = PolynomialRing(GF(7), order='degrevlex')
     F = [x1*y1 + 5*x2*y1 + 4*x3*y1 + 5*x1*y2 + 3*x2*y2 + x1*y3 + 4*x2*y3 + 5*x3*y3 + 5*x1*y4 + x2*y4 + 2*x3*y4,
@@ -472,7 +479,7 @@ if __name__ == '__main__':
     6*x1*y1 + 3*x2*y1 + 6*x3*y1 + 3*x1*y2 + 5*x3*y2 + 2*x1*y3 + 4*x2*y3 + 5*x3*y3 + 2*x1*y4 + 4*x2*y4 + 5*x3*y4
     ]
     """
-    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_14_15.sobj"))
+    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_14_15.sobj"))
     #D = Ideal(F).degree_of_semi_regularity()
     print(f"---------------Generating Serie Bardet: {generating_bardet_series(F)}\n\n")
     series_ring.<z> = PowerSeriesRing(ZZ)
@@ -480,7 +487,7 @@ if __name__ == '__main__':
     print(f"---------------Hilbert Series: {hilbert_series}\n\n")
 
     nx = 7
-    ny = 5
+    ny = 7
     print(f"---------------degree of semi-regularity of F: {D}\n\n")
     print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(nx, ny, len(F))}\n\n")
 

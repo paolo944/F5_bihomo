@@ -76,7 +76,7 @@ class Mac:
             except KeyError:
                 print(f"Erreur: monôme {monomial} non trouvé dans hash_list")
                 continue
-        return vector(f.base_ring(), vec)
+        return vec
 
     def row_lm(self, i):
         """
@@ -96,10 +96,10 @@ class Mac:
         """
         if self.poly_ring.characteristic() == 2:
             if self.matrix == None:
-                self.matrix = matrix(GF(2), 1, len(vec), [vec], sparse=False)
+                self.matrix = [vec]
                 return
             else:
-                self.matrix = self.matrix.transpose().augment(vec).transpose()
+                self.matrix.append(vec)
                 return
         else:
             if self.d < 4:
@@ -124,10 +124,17 @@ class Mac:
         # Selon Bardet: si u est un terme de tête dans M̃_{d-d_i,i-1}
         for j in range(M_prev.matrix.nrows()):
             sig_u, sig_i = M_prev.sig[j]
-            if sig_i < i and M_prev.row_lm(j) == u:
-                return True
-            elif sig_i >= i:
+            if sig_i >= i:
                 return False
+
+            lm_j = M_prev.row_lm(j)
+
+            try:
+                if u % lm_j == 0:
+                    return True
+            except (TypeError, ZeroDivisionError):
+                if lm_j == u:
+                    return True
         return False
 
     def add_line(self, f, i, u):
@@ -150,20 +157,7 @@ class Mac:
             self.matrix.echelonize(algorithm="m4ri", reduced=False)
 
         else:
-            nrows = self.matrix.nrows()
-            for i in range(nrows):
-                try:
-                    lead_i = self.matrix.nonzero_positions_in_row(i)[0]
-                except IndexError:
-                    continue  # ligne nulle
-                for j in range(i+1, nrows):
-                    try:
-                        positions_j = self.matrix.nonzero_positions_in_row(j)
-                        if lead_i in positions_j:
-                            factor = self.matrix[j, positions_j.index(lead_i)] / self.matrix[i, lead_i]
-                            self.matrix.add_multiple_of_row(j, i, factor)
-                    except IndexError:
-                        continue
+            self.matrix.echelonize()
  
         t1 = time.time()        
         print(f"[TIMER] Temps pour Gauss (matrice {self.matrix.nrows()}x{self.matrix.ncols()}) : {t1 - t0:.4f} s")
@@ -309,6 +303,8 @@ def F5Matrix(F, dmax):
         t1 = time.time()
         print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
         #tmp_Mac = copy.deepcopy(Mac_d)
+        Mac_d.matrix = matrix(GF(2), Mac_d.matrix)
+        print("done conversion")
         Mac_d.gauss()
         #update_gb(gb, tmp_Mac, Mac_d)
         reductions_to_zero = Mac_d.verify_reductions_zero()
@@ -404,7 +400,7 @@ if __name__ == '__main__':
     #hilbert_series = series_ring(Ideal(F).hilbert_series())
     #print(f"Hilbert Series: {hilbert_series}")
     D = Ideal(F).degree_of_semi_regularity()
-    #print(generating_bardet_series(F))
+    print(generating_bardet_series(F))
     #for i in F:
     #    print(i.total_degree())
     #print(f"degree of semi-regularity of F: {D}")

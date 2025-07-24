@@ -88,7 +88,7 @@ class Mac:
             except KeyError:
                 print(f"Erreur: monôme {monomial} non trouvé dans hash_list")
                 continue
-        return vector(f.base_ring(), vec)
+        return vec
 
     def row_lm(self, i):
         """
@@ -108,10 +108,10 @@ class Mac:
         if self.poly_ring.characteristic() == 2:
             #print("char 2")
             if self.matrix == None:
-                self.matrix = matrix(GF(2), 1, len(vec), [vec], sparse=False)
+                self.matrix = [vec]
                 return
             else:
-                self.matrix = self.matrix.transpose().augment(vec).transpose()
+                self.matrix.append(vec)
                 return
         else:
             #print("not char 2")
@@ -357,6 +357,7 @@ def F5Matrix(F, dmax, nx, ny):
         t1 = time.time()
         print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
         #tmp_Mac = copy.deepcopy(Mac_d)
+        Mac_d.matrix = matrix(GF(2), Mac_d.matrix, sparse=False)
         Mac_d.gauss()
         reductions_to_zero = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.matrix.nrows()}")

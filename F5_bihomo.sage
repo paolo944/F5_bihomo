@@ -85,10 +85,10 @@ class MacBiHom(BaseMac):
         """
         if Mac_d_1.d == (self.d[0] - 1, self.d[1]):
             degree_to_add = 0
-            variables = self.variables[:self.poly_ring.ngens() // 2]
+            variables = self.variables[:self.nx]
         elif Mac_d_1.d == (self.d[0], self.d[1] - 1):
             degree_to_add = 1
-            variables = self.variables[self.poly_ring.ngens() // 2:]
+            variables = self.variables[self.nx:self.nx+self.ny]
 
         for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
             if f_ii < i:
@@ -112,7 +112,6 @@ class MacBiHom(BaseMac):
                         self.add_line(f_i, i, x_i*e)
                         #print(f"added ({x_i*e}, {f_i}) = {f_i*x_i*e}")
             #print()
-
         return
 
 def integer_vectors_at_most(max_sum):

@@ -3,22 +3,22 @@ import copy
 import time
 
 class MacHom(BaseMac):
-    def __init__(self, n, d, F):
+    def __init__(self, n, d, F, m):
         self.n = n
         self.d = d
+        #monomials_str = ['x' + str(i) + 'bar' for i in range(1, n//2 + 1)] + ['y' + str(i) + 'bar' for i in range(1, n//2 + 1)]
         monomials_str = ['x' + str(i) for i in range(1, n//2 + 1)] + ['y' + str(i) for i in range(1, n//2 + 1)]
-        super().__init__(F, monomials_str)
+        super().__init__(F, monomials_str, m)
 
     def monomial_ordered_list_deg_d(self, d):
         """
         Generate all monomials of degree d and add them to hash list
         Fonction testé -> Correcte
         """
-        R = self.quotient_ring
         poly_ring = self.poly_ring
 
         monomials = poly_ring.monomials_of_degree(d)
-        monomials_in_R = sorted([R(m) for m in monomials], reverse=True)
+        monomials_in_R = sorted([poly_ring(m) for m in monomials], reverse=True)
 
         hash_size = len(self.monomial_hash_list)
         self.monomial_hash_list = {m: i for i, m in enumerate(monomials_in_R)} | self.monomial_hash_list
@@ -29,12 +29,12 @@ class MacHom(BaseMac):
         Add line (u, f_i) to Macaulay matrix
         Fonction testé -> Correcte
         """
-        vec = self.polynomial_to_vector(self.quotient_ring(u*f))
+        vec = self.polynomial_to_vector(self.poly_ring(u*f))
         self.add_row(vec)
         self.sig.append((u, i))
         return
 
-    def add_lines(self, f_i, i, Mac_d_1, Mac_d_2):
+    def add_lines(self, f_i, i, Mac_d_1):
         """
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
@@ -51,16 +51,20 @@ class MacHom(BaseMac):
                 x_lambda = e.monomials()[0].variables()[0] #biggest variable in e
                 #print(f"{e.monomials()}")
             #print(f"e: {e}, x_lambda:{x_lambda}")
+            #good_crit = True
             for x_i in self.variables:
                 if x_i >= x_lambda:
                     if f_i.total_degree() == 1:
                         #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
                         self.add_line(f_i, i, x_i*e)
                     elif f_i.total_degree() == 2:
-                        #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_2):
-                        self.add_line(f_i, i, x_i*e)
-                            #print(f"added ({x_i*e}, {f_i}) = {f_i*x_i*e}")
-            #print()
+                        u = x_i * e
+                        crit = False
+                        for (ii, lm) in self.crit:
+                            if ii < i and lm == u:
+                                crit = True
+                        if not crit:
+                            self.add_line(f_i, i, u)
         return
 
 def F5Matrix(F, dmax):
@@ -90,25 +94,35 @@ def F5Matrix(F, dmax):
     for d in range(F[0].total_degree(), dmax+1):
         print(f"\n{'-' * 20} d={d} {'-' * 20}\n")
         t_deg_start = time.time()
-        Mac_d = MacHom(n, d, R)
+        Mac_d = MacHom(n, d, R, m)
         Mac_d.monomial_ordered_list_deg_d(d)
         t0 = time.time()
+        Mac_d.F5_criterion(Mac_d_2)
         for i in range(0, m):
             f_i = F[i]
-            if F[i].total_degree() == d:
+            if f_i.total_degree() == d:
                 Mac_d.add_line(f_i, i, 1)
+            elif f_i.total_degree() > d:
+                continue
             else:
-                Mac_d.add_lines(f_i, i, Mac_d_1, Mac_d_2)
+                Mac_d.add_lines(f_i, i, Mac_d_1)
         t1 = time.time()
         print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
+        #Mac_d.matrix = matrix(GF(2), Mac_d.matrix)
+        #print("done conversion")
         #tmp_Mac = copy.deepcopy(Mac_d)
-        Mac_d.matrix = matrix(GF(2), Mac_d.matrix)
-        print("done conversion")
-        Mac_d.gauss()
+        Mac_d.gauss(debug=True)
         #update_gb(gb, tmp_Mac, Mac_d)
-        reductions_to_zero = Mac_d.verify_reductions_zero()
-        print(f"number of reductions to 0 in degree {d} with normal Gauss: {reductions_to_zero} / {Mac_d.matrix.nrows()}")
-        print(f"Corank of degree {d}: {Mac_d.corank()} ----- Value in Hilbert Series: {hilbert_series[d]}")
+        reductions_to_zero, lignes_0 = Mac_d.verify_reductions_zero()
+        ncols = len(Mac_d.monomial_hash_list)
+        nrows = len(Mac_d.matrix) // ncols
+        print(f"number of reductions to 0 in degree {d} with normal Gauss: {reductions_to_zero} / {nrows}")
+        print(f"Corank of degree {d}: {ncols - nrows + reductions_to_zero} ----- Value in Hilbert Series: {hilbert_series[d]}")
+
+        if reductions_to_zero > 0:
+            for i in lignes_0:
+                print(Mac_d.sig[i])
+                #print(depend_matrix[i])
         Mac_d_2 = Mac_d_1
         Mac_d_1 = Mac_d
 
@@ -121,77 +135,75 @@ def F5Matrix(F, dmax):
             p = Mac_d.vector_to_polynomial(i)
             v = Mac_d.polynomial_to_vector(p)
             print(f"test ligne {i}: {v == r}")
+        
+        # Vérification row_lm() cohérence avec le vecteur original
+        for idx in range(Mac_d.matrix.nrows()):
+            lm_vec = Mac_d.row_lm(idx)
+            poly = Mac_d.vector_to_polynomial(idx)
+            try:
+                lm_poly = poly.lm()
+            except AttributeError:
+                lm_poly = 0
+            if lm_vec != lm_poly:
+                print(f"[ERREUR row_lm] ligne {idx} : row_lm()={lm_vec}, poly.lm()={lm_poly}")
+            #else:
+            #    print(f"[OK] row_lm ligne {idx} correcte : {lm_vec}")
         """
 
     return gb
 
-def doit(n, m):
-    """
-    Generate random system of n variables and m
-    polynomials on GF(2)
-    Stolen from hpXbred :)
-    """
-    # planted solution
-    V = GF(2)**n 
-    x = V.random_element() 
-    I = []
-
-    monomials_str = ['x'+str(i) for i in range(1, n//2 + 1)] + ['y'+str(i) for i in range(1, n//2 + 1)]
-    #monomials_str = ['x'+str(i) for i in range(1, n+1)]
-    R = PolynomialRing(GF(2), monomials_str, order='degrevlex')
-    
-    def random_quad_poly(R):
-        K = R.base_ring()
-        v = vector(R.gens())
-        n = len(v) 
-        Mq = matrix.random(K, n, n)
-        Ml = matrix.random(K, 1, n)
-        f = v * Mq * v + (Ml*v)[0] + K.random_element()
-        return f
-    
-    # m random polynomials
-    for _ in range(m): 
-        f = random_quad_poly(R) 
-        f += f(*x) 
-        I.append(f)
-
-    return I
-
 if __name__ == '__main__':
-    F = homogenized_ideal(doit(14, 15))
+    F = homogenized_ideal(doit(10, 11))
+    #save(F, "test.sobj")
+    #F = load("test.sobj")
+    #for f in F:
+    #    print(f)
     """
     R.<x1, x2, x3> = PolynomialRing(GF(5), order='degrevlex')
     F = [x2^2 + 4*x2*x3,
     2*x1^2 + 3*x1*x2 + 4*x2^2 + 3*x3^2,
     3*x1^2 + 4*x1*x2 + 2*x2^2]
     """
-    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_12_13.sobj"))
+    
+    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_18_19.sobj"))
+    #F = homogenized_ideal(doit_bilinear(5, 5, 11))
     #series_ring.<z> = PowerSeriesRing(ZZ)
     #hilbert_series = series_ring(Ideal(F).hilbert_series())
     #print(f"Hilbert Series: {hilbert_series}")
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
-    #for i in F:
-    #    print(i.total_degree())
-    #print(f"degree of semi-regularity of F: {D}")
+    for i in F:
+        print(i.total_degree())
+    print(f"degree of semi-regularity of F: {D}")
 
+    F = sorted(F, key=lambda f: f.degree())
     gb = F5Matrix(F, D)
-
-    #for i in F:
-    #    print(i in gb)
-
-    #gb = [lift(p) for p in gb]
     print(len(gb))
-    #print(gb)
-
-    gb2 = Ideal(gb).groebner_basis()
-
     print(Ideal(gb).basis_is_groebner())
 
-    gb = Ideal(F).groebner_basis()
-    gb3 = Ideal(F).groebner_basis()
+    """
+    #Test linéarisation avec Frobenius
+    F = load("../MPCitH_SBC/system/sage/system_bilin_36_37_test.sobj")
+    m = len(F)
+    R = F[0].base_ring()
+    n = F[0].parent().ngens()
+    Mac = MacHom(n, 2, R, m)
+    Mac.monomial_ordered_list_deg_d(2)
+    Mac.monomial_ordered_list_deg_d(1)
+    Mac.monomial_ordered_list_deg_d(0)
+    for i, f in enumerate(F):
+        Mac.add_line(f, i, 1)
+    Mac.matrix = matrix(GF(2), Mac.matrix)
+    print(Mac.matrix.nrows())
+    print(Mac.matrix.ncols())
+    print(Mac.matrix.rank())
+    #print(F)
+    """
 
-    #print(gb)
-    print(len(gb))
-    print(len(gb3))
-    print(len(gb2))
+#105 reduc à 0 au deg 4
+#1470 reduc à 0 au deg 5
+#
+#pour SBC:
+#245 reduc à 0 au deg 4
+#2604 reduc à 0 au deg 5
+

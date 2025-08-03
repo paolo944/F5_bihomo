@@ -1,0 +1,606 @@
+alolop@alolop-pc:~/M2/stage/F5_bihomo$ sage F5_bihomo.sage
+---------------Generating Serie Bardet: 1 + 20*z + 189*z^2 + 1120*z^3 + 4655*z^4 + 14364*z^5 + 33915*z^6 + 62016*z^7 + 87210*z^8 + 90440*z^9 + 58786*z^10 - 58786*z^12 - 90440*z^13 - 87210*z^14 - 62016*z^15 - 33915*z^16 - 14364*z^17 - 4655*z^18 - 1120*z^19 + O(z^20)
+
+
+---------------Série génératrice bilinéaire: 1 + 10*tx + 10*ty + 55*tx^2 + 79*tx*ty + 55*ty^2 + 220*tx^3 + 340*tx^2*ty + 340*tx*ty^2 + 220*ty^3 + 715*tx^4 + 1045*tx^3*ty + 1135*tx^2*ty^2 + 1045*tx*ty^3 + 715*ty^4 + 2002*tx^5 + 2530*tx^4*ty + 2650*tx^3*ty^2 + 2650*tx^2*ty^3 + 2530*tx*ty^4 + 2002*ty^5 + 5005*tx^6 + 5005*tx^5*ty + 4675*tx^4*ty^2 + 4545*tx^3*ty^3 + 4675*tx^2*ty^4 + 5005*tx*ty^5 + 5005*ty^6 + 11440*tx^7 + 8008*tx^6*ty + 6160*tx^5*ty^2 + 5400*tx^4*ty^3 + 5400*tx^3*ty^4 + 6160*tx^2*ty^5 + 8008*tx*ty^6 + 11440*ty^7 + 24310*tx^8 + 9295*tx^7*ty + 5005*tx^6*ty^2 + 3465*tx^5*ty^3 + 3060*tx^4*ty^4 + 3465*tx^3*ty^5 + 5005*tx^2*ty^6 + 9295*tx*ty^7 + 24310*ty^8 + 48620*tx^9 + 2860*tx^8*ty - 1430*tx^7*ty^2 - 2310*tx^6*ty^3 - 2520*tx^5*ty^4 - 2520*tx^4*ty^5 - 2310*tx^3*ty^6 - 1430*tx^2*ty^7 + 2860*tx*ty^8 + 48620*ty^9 + 92378*tx^10 - 24310*tx^9*ty - 14300*tx^8*ty^2 - 10725*tx^7*ty^3 - 9240*tx^6*ty^4 - 8820*tx^5*ty^5 - 9240*tx^4*ty^6 - 10725*tx^3*ty^7 - 14300*tx^2*ty^8 - 24310*tx*ty^9 + 92378*ty^10 + 167960*tx^11 - 97240*tx^10*ty - 28600*tx^9*ty^2 - 17160*tx^8*ty^3 - 13200*tx^7*ty^4 - 11760*tx^6*ty^5 - 11760*tx^5*ty^6 - 13200*tx^4*ty^7 - 17160*tx^3*ty^8 - 28600*tx^2*ty^9 - 97240*tx*ty^10 + 167960*ty^11 + O(tx, ty)^12
+
+
+F5 bihomogeneous for d=2...5
+
+-------------------- d=(1, 0) --------------------
+
+Corank of degree (1, 0): 10 ----- Value in Hilbert Biseries: 10
+
+-------------------- d=(0, 1) --------------------
+
+Corank of degree (0, 1): 10 ----- Value in Hilbert Biseries: 10
+
+-------------------- d=(2, 0) --------------------
+
+Corank of degree (2, 0): 55 ----- Value in Hilbert Biseries: 55
+
+-------------------- d=(1, 1) --------------------
+
+[TIMER] Temps pour add_lines : 0.0060 s
+[TIMER] Temps pour Gauss (matrice 21x100) : 0.0000 s
+number of reductions to 0 in degree (1, 1): 0 / 21
+Corank of degree (1, 1): 79 ----- Value in Hilbert Biseries: 79
+[TIMER] Temps total pour bi-degré (1, 1) : 0.01 s
+
+-------------------- d=(0, 2) --------------------
+
+Corank of degree (0, 2): 55 ----- Value in Hilbert Biseries: 55
+
+-------------------- d=(3, 0) --------------------
+
+Corank of degree (3, 0): 220 ----- Value in Hilbert Biseries: 220
+
+-------------------- d=(2, 1) --------------------
+
+[TIMER] Temps pour add_lines : 0.0554 s
+[TIMER] Temps pour Gauss (matrice 210x550) : 0.0001 s
+number of reductions to 0 in degree (2, 1): 0 / 210
+Corank of degree (2, 1): 340 ----- Value in Hilbert Biseries: 340
+[TIMER] Temps total pour bi-degré (2, 1) : 0.09 s
+
+-------------------- d=(1, 2) --------------------
+
+[TIMER] Temps pour add_lines : 0.0545 s
+[TIMER] Temps pour Gauss (matrice 210x550) : 0.0000 s
+number of reductions to 0 in degree (1, 2): 0 / 210
+Corank of degree (1, 2): 340 ----- Value in Hilbert Biseries: 340
+[TIMER] Temps total pour bi-degré (1, 2) : 0.09 s
+
+-------------------- d=(0, 3) --------------------
+
+Corank of degree (0, 3): 220 ----- Value in Hilbert Biseries: 220
+
+-------------------- d=(4, 0) --------------------
+
+Corank of degree (4, 0): 715 ----- Value in Hilbert Biseries: 715
+
+-------------------- d=(3, 1) --------------------
+
+[TIMER] Temps pour add_lines : 0.3081 s
+[TIMER] Temps pour Gauss (matrice 1155x2200) : 0.0024 s
+number of reductions to 0 in degree (3, 1): 0 / 1155
+Corank of degree (3, 1): 1045 ----- Value in Hilbert Biseries: 1045
+[TIMER] Temps total pour bi-degré (3, 1) : 0.54 s
+
+-------------------- d=(2, 2) --------------------
+
+[TIMER] Temps pour add_lines : 0.5057 s
+[TIMER] Temps pour Gauss (matrice 1890x3025) : 0.0029 s
+number of reductions to 0 in degree (2, 2): 0 / 1890
+Corank of degree (2, 2): 1135 ----- Value in Hilbert Biseries: 1135
+[TIMER] Temps total pour bi-degré (2, 2) : 0.76 s
+
+-------------------- d=(1, 3) --------------------
+
+[TIMER] Temps pour add_lines : 0.3087 s
+[TIMER] Temps pour Gauss (matrice 1155x2200) : 0.0012 s
+number of reductions to 0 in degree (1, 3): 0 / 1155
+Corank of degree (1, 3): 1045 ----- Value in Hilbert Biseries: 1045
+[TIMER] Temps total pour bi-degré (1, 3) : 0.55 s
+
+-------------------- d=(0, 4) --------------------
+
+Corank of degree (0, 4): 715 ----- Value in Hilbert Biseries: 715
+
+-------------------- d=(5, 0) --------------------
+
+Corank of degree (5, 0): 2002 ----- Value in Hilbert Biseries: 2002
+
+-------------------- d=(4, 1) --------------------
+
+[TIMER] Temps pour add_lines : 1.6039 s
+[TIMER] Temps pour Gauss (matrice 5565x7150) : 0.1030 s
+number of reductions to 0 in degree (4, 1): 945 / 5565
+Corank of degree (4, 1): 2530 ----- Value in Hilbert Biseries: 2530
+[TIMER] Temps total pour bi-degré (4, 1) : 2.93 s
+
+-------------------- d=(3, 2) --------------------
+
+[TIMER] Temps pour add_lines : 2.8639 s
+[TIMER] Temps pour Gauss (matrice 9450x12100) : 0.1573 s
+number of reductions to 0 in degree (3, 2): 0 / 9450
+Corank of degree (3, 2): 2650 ----- Value in Hilbert Biseries: 2650
+[TIMER] Temps total pour bi-degré (3, 2) : 4.62 s
+
+-------------------- d=(2, 3) --------------------
+
+[TIMER] Temps pour add_lines : 2.8464 s
+[TIMER] Temps pour Gauss (matrice 9450x12100) : 0.0965 s
+number of reductions to 0 in degree (2, 3): 0 / 9450
+Corank of degree (2, 3): 2650 ----- Value in Hilbert Biseries: 2650
+[TIMER] Temps total pour bi-degré (2, 3) : 4.55 s
+
+-------------------- d=(1, 4) --------------------
+
+[TIMER] Temps pour add_lines : 1.6422 s
+[TIMER] Temps pour Gauss (matrice 5565x7150) : 0.0247 s
+number of reductions to 0 in degree (1, 4): 945 / 5565
+Corank of degree (1, 4): 2530 ----- Value in Hilbert Biseries: 2530
+[TIMER] Temps total pour bi-degré (1, 4) : 2.93 s
+
+-------------------- d=(0, 5) --------------------
+
+Corank of degree (0, 5): 2002 ----- Value in Hilbert Biseries: 2002
+         22350311 function calls (22349317 primitive calls) in 19.904 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      9/1    0.000    0.000   19.948   19.948 {built-in method builtins.exec}
+        1    0.003    0.003   19.904   19.904 F5_bihomo.sage.py:144(F5Matrix)
+      189    0.675    0.004   10.168    0.054 F5_bihomo.sage.py:96(add_lines)
+    34671    0.177    0.000    9.398    0.000 F5_bihomo.sage.py:68(add_line)
+       20    0.120    0.006    7.785    0.389 F5_bihomo.sage.py:36(__init__)
+       20    0.195    0.010    7.657    0.383 F5_bihomo.sage.py:48(monomial_ordered_list_deg_d)
+    34671    5.788    0.000    6.917    0.000 <string>:101(polynomial_to_vector)
+       20    1.508    0.075    5.586    0.279 {method 'monomials_of_degree' of 'sage.rings.polynomial.multi_polynomial_ring_base.MPolynomialRing_base' objects}
+   306149    0.347    0.000    4.078    0.000 integer_vector_weighted.py:213(__iter__)
+   340800    0.810    0.000    3.916    0.000 F5_bihomo.sage.py:12(bi_degree)
+   306129    0.193    0.000    3.129    0.000 integer_vector.py:449(check)
+   346785    2.242    0.000    2.242    0.000 {method 'exponents' of 'sage.rings.polynomial.multi_polynomial_libsingular.MPolynomial_libsingular' objects}
+   306129    1.336    0.000    1.896    0.000 integer_vector_weighted.py:154(__contains__)
+       10    1.455    0.146    1.455    0.146 <string>:271(verify_reductions_zero)
+   306169    0.390    0.000    1.021    0.000 {built-in method builtins.any}
+   681600    0.388    0.000    0.878    0.000 functional.py:413(symbolic_sum)
+    34671    0.676    0.000    0.676    0.000 {method 'monomials' of 'sage.rings.polynomial.multi_polynomial_libsingular.MPolynomial_libsingular' objects}
+  6428709    0.631    0.000    0.631    0.000 integer_vector.py:478(<genexpr>)
+   306149    0.460    0.000    0.590    0.000 integer_vector_weighted.py:346(iterator_fast)
+6437728/6437722    0.520    0.000    0.520    0.000 {built-in method builtins.isinstance}
+    34671    0.389    0.000    0.389    0.000 {method 'coefficients' of 'sage.rings.polynomial.multi_polynomial_libsingular.MPolynomial_libsingular' objects}
+       10    0.388    0.039    0.388    0.039 <string>:311(gauss)
+    34671    0.188    0.000    0.249    0.000 <string>:159(add_row)
+   681600    0.248    0.000    0.248    0.000 {built-in method builtins.sum}
+  3112212    0.206    0.000    0.206    0.000 {built-in method builtins.len}
+   681637    0.109    0.000    0.109    0.000 {built-in method builtins.max}
+    69342    0.082    0.000    0.082    0.000 {built-in method numpy.zeros}
+        1    0.000    0.000    0.058    0.058 F5_bihomo.sage.py:223(hilbert_biseries)
+     4641    0.042    0.000    0.053    0.000 F5_bihomo.sage.py:88(biggest_y)
+        2    0.012    0.006    0.052    0.026 F5_bihomo.sage.py:229(Nm)
+   683616    0.051    0.000    0.051    0.000 {built-in method builtins.hasattr}
+   370927    0.038    0.000    0.038    0.000 {method 'append' of 'list' objects}
+    71134    0.029    0.000    0.036    0.000 {method 'characteristic' of 'sage.rings.polynomial.multi_polynomial_ring_base.MPolynomialRing_base' objects}
+    77555    0.032    0.000    0.032    0.000 {method 'total_degree' of 'sage.rings.polynomial.multi_polynomial_libsingular.MPolynomial_libsingular' objects}
+      834    0.028    0.000    0.031    0.000 multi_power_series_ring_element.py:794(_mul_)
+   244416    0.025    0.000    0.025    0.000 {method 'pop' of 'list' objects}
+       10    0.001    0.000    0.020    0.002 <string>:253(F5_criterion)
+     1722    0.019    0.000    0.019    0.000 <string>:128(row_lm)
+310530/310528    0.019    0.000    0.019    0.000 {method 'parent' of 'sage.structure.element.Element' objects}
+       10    0.014    0.001    0.019    0.002 <string>:208(finalize_matrix)
+     1386    0.011    0.000    0.014    0.000 F5_bihomo.sage.py:80(biggest_x)
+       20    0.000    0.000    0.010    0.000 finite_word.py:5136(standard_permutation)
+       20    0.000    0.000    0.010    0.000 permutation.py:9210(to_standard)
+     1505    0.003    0.000    0.008    0.000 multi_power_series_ring_element.py:308(__init__)
+    82/20    0.000    0.000    0.008    0.000 category.py:1487(_make_named_class)
+    36/14    0.000    0.000    0.008    0.001 unique_representation.py:1098(__classcall__)
+    36/14    0.000    0.000    0.008    0.001 unique_representation.py:573(__classcall__)
+    36/14    0.000    0.000    0.008    0.001 {sage.misc.classcall_metaclass.typecall}
+       20    0.000    0.000    0.008    0.000 permutation.py:6032(__classcall_private__)
+        1    0.000    0.000    0.007    0.007 permutation.py:7345(__init__)
+    71135    0.007    0.000    0.007    0.000 finite_field_prime_modn.py:187(characteristic)
+    28/13    0.000    0.000    0.007    0.001 category.py:425(__classcall__)
+     24/9    0.000    0.000    0.007    0.001 category.py:456(__init__)
+    33/15    0.000    0.000    0.007    0.000 category_with_axiom.py:1977(__classcall__)
+     24/9    0.000    0.000    0.006    0.001 category.py:1613(subcategory_class)
+      7/4    0.000    0.000    0.006    0.002 category.py:2083(_with_axiom)
+     23/8    0.000    0.000    0.006    0.001 category.py:1018(_super_categories_for_classes)
+     23/8    0.000    0.000    0.006    0.001 category.py:833(_all_super_categories)
+    65/11    0.000    0.000    0.006    0.001 category.py:2027(_with_axiom_as_tuple)
+     23/8    0.000    0.000    0.006    0.001 category.py:993(_super_categories)
+       10    0.006    0.001    0.006    0.001 {built-in method builtins.delattr}
+     13/4    0.000    0.000    0.005    0.001 category_with_axiom.py:2088(__init__)
+       20    0.004    0.000    0.005    0.000 <string>:55(__init__)
+     13/4    0.000    0.000    0.005    0.001 category_with_axiom.py:2146(super_categories)
+     41/8    0.000    0.000    0.004    0.001 category_with_axiom.py:2186(<genexpr>)
+      175    0.000    0.000    0.004    0.000 dynamic_class.py:129(dynamic_class)
+      116    0.001    0.000    0.004    0.000 multi_power_series_ring.py:851(_element_constructor_)
+      115    0.003    0.000    0.004    0.000 dynamic_class.py:339(dynamic_class_internal)
+     11/9    0.000    0.000    0.003    0.000 <frozen importlib._bootstrap>:1349(_find_and_load)
+        1    0.003    0.003    0.003    0.003 multi_power_series_ring_element.py:1032(_div_)
+      220    0.002    0.000    0.003    0.000 multi_power_series_ring_element.py:819(_lmul_)
+  519/387    0.000    0.000    0.003    0.000 {built-in method builtins.getattr}
+       40    0.001    0.000    0.003    0.000 polynomial_ring_constructor.py:60(PolynomialRing)
+       20    0.000    0.000    0.003    0.000 word.py:44(Word)
+      106    0.003    0.000    0.003    0.000 {built-in method builtins.sorted}
+      9/7    0.000    0.000    0.003    0.000 <frozen importlib._bootstrap>:1304(_find_and_load_unlocked)
+      244    0.002    0.000    0.002    0.000 multi_power_series_ring_element.py:754(_add_)
+      115    0.000    0.000    0.002    0.000 multi_power_series_ring.py:1080(_send_to_bg)
+   107/45    0.000    0.000    0.002    0.000 category.py:2074(<genexpr>)
+       20    0.002    0.000    0.002    0.000 F5_bihomo.sage.py:18(number_of_monomials_bidegree)
+    53/24    0.000    0.000    0.002    0.000 category.py:2326(join)
+      9/7    0.000    0.000    0.002    0.000 <frozen importlib._bootstrap>:911(_load_unlocked)
+      8/7    0.000    0.000    0.002    0.000 <frozen importlib._bootstrap_external>:989(exec_module)
+     24/9    0.000    0.000    0.002    0.000 category.py:2748(_make_named_class)
+      7/5    0.000    0.000    0.002    0.000 homset.py:87(Hom)
+        1    0.000    0.000    0.002    0.002 weyl_groups.py:52(super_categories)
+      260    0.000    0.000    0.002    0.000 other.py:1718(_eval_)
+       40    0.001    0.000    0.001    0.000 words.py:124(__init__)
+        1    0.000    0.000    0.001    0.001 coxeter_groups.py:103(super_categories)
+        1    0.000    0.000    0.001    0.001 generalized_coxeter_groups.py:77(extra_super_categories)
+       20    0.000    0.000    0.001    0.000 words.py:1779(__call__)
+        1    0.000    0.000    0.001    0.001 generalized_coxeter_groups.py:45(super_categories)
+     38/2    0.000    0.000    0.001    0.001 category.py:1708(element_class)
+       16    0.000    0.000    0.001    0.000 category.py:3063(_make_named_class_key)
+     1505    0.000    0.000    0.001    0.000 multi_power_series_ring.py:943(_bg_ps_ring)
+     1390    0.001    0.000    0.001    0.000 {built-in method builtins.min}
+        1    0.000    0.000    0.001    0.001 complex_reflection_or_generalized_coxeter_groups.py:103(super_categories)
+       62    0.000    0.000    0.001    0.000 category.py:3095(<genexpr>)
+        2    0.000    0.000    0.001    0.001 magmas.py:222(FinitelyGenerated)
+    19/14    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap>:480(_call_with_frames_removed)
+        2    0.000    0.000    0.001    0.001 magmas.py:165(FinitelyGeneratedAsMagma)
+       40    0.000    0.000    0.001    0.000 polynomial_ring_constructor.py:837(_multi_variate)
+    40/20    0.000    0.000    0.001    0.000 decorators.py:658(wrapper)
+        1    0.000    0.000    0.001    0.001 complex_reflection_or_generalized_coxeter_groups.py:117(Irreducible)
+       20    0.000    0.000    0.001    0.000 permutation.py:7270(_element_constructor_)
+      260    0.000    0.000    0.001    0.000 other.py:1755(_evalf_)
+      115    0.001    0.000    0.001    0.000 {method 'homogeneous_components' of 'sage.rings.polynomial.multi_polynomial.MPolynomial' objects}
+       20    0.000    0.000    0.001    0.000 words.py:62(Words)
+  272/186    0.000    0.000    0.001    0.000 category.py:1609(<genexpr>)
+  489/459    0.000    0.000    0.001    0.000 category.py:1798(is_subcategory)
+      116    0.000    0.000    0.001    0.000 power_series_ring.py:751(_element_constructor_)
+       69    0.000    0.000    0.001    0.000 {built-in method sage.categories.category_cy_helper._sort_uniq}
+       20    0.000    0.000    0.001    0.000 words.py:1626(__init__)
+      410    0.000    0.000    0.001    0.000 category.py:638(_subcategory_hook_)
+       41    0.001    0.000    0.001    0.000 {built-in method sage.structure.category_object.normalize_names}
+      260    0.000    0.000    0.001    0.000 misc.py:3724(binomial)
+       91    0.000    0.000    0.001    0.000 multi_power_series_ring_element.py:774(_sub_)
+       21    0.000    0.000    0.001    0.000 category.py:1658(parent_class)
+        8    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:1062(get_code)
+        9    0.001    0.000    0.001    0.000 <frozen importlib._bootstrap>:416(__enter__)
+       41    0.000    0.000    0.001    0.000 term_order.py:571(__init__)
+        1    0.000    0.000    0.001    0.001 {method '_Hom_' of 'sage.rings.finite_rings.finite_field_base.FiniteField' objects}
+     1450    0.000    0.000    0.001    0.000 infinity.py:1692(_richcmp_)
+       81    0.001    0.000    0.001    0.000 {built-in method builtins.print}
+     46/3    0.000    0.000    0.001    0.000 category.py:1916(_meet_)
+        2    0.000    0.000    0.001    0.000 finite_field_prime_modn.py:95(_coerce_map_from_)
+       23    0.000    0.000    0.001    0.000 {built-in method sage.categories.category_cy_helper.join_as_tuple}
+        1    0.000    0.000    0.001    0.001 permutation.py:7380(_coerce_map_from_)
+     90/9    0.000    0.000    0.001    0.000 category.py:1971(<genexpr>)
+     27/9    0.000    0.000    0.001    0.000 {built-in method builtins.__build_class__}
+        4    0.000    0.000    0.001    0.000 category.py:3037(__init__)
+       20    0.000    0.000    0.001    0.000 words.py:1693(finite_words)
+       13    0.000    0.000    0.001    0.000 sageinspect.py:1403(sage_getargspec)
+      115    0.000    0.000    0.001    0.000 polynomial_ring.py:335(_element_constructor_)
+       20    0.000    0.000    0.001    0.000 words.py:559(__call__)
+      260    0.000    0.000    0.000    0.000 {method 'binomial' of 'sage.rings.integer.Integer' objects}
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:751(_compile_bytecode)
+        8    0.000    0.000    0.000    0.000 {built-in method marshal.loads}
+        1    0.000    0.000    0.000    0.000 homset.py:1(<module>)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1240(_find_spec)
+       40    0.000    0.000    0.000    0.000 sets_cat.py:961(_element_constructor_)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:806(module_from_spec)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1520(find_spec)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1491(_get_spec)
+        1    0.000    0.000    0.000    0.000 sets_cat.py:738(Finite)
+       20    0.000    0.000    0.000    0.000 integer_vector_weighted.py:79(__classcall_private__)
+        1    0.000    0.000    0.000    0.000 sageinspect.py:2047(sage_getsource)
+     4285    0.000    0.000    0.000    0.000 {method 'prec' of 'sage.rings.power_series_ring_element.PowerSeries' objects}
+        1    0.000    0.000    0.000    0.000 F5_bihomo.sage.py:136(integer_vectors_at_most)
+        1    0.000    0.000    0.000    0.000 sageinspect.py:2213(sage_getsourcelines)
+       20    0.000    0.000    0.000    0.000 words.py:383(_element_classes)
+        1    0.000    0.000    0.000    0.000 cactus_group.py:1(<module>)
+       40    0.000    0.000    0.000    0.000 polynomial_ring_constructor.py:746(_get_from_cache)
+       23    0.000    0.000    0.000    0.000 {built-in method sage.misc.c3_controlled.C3_sorted_merge}
+       40    0.000    0.000    0.000    0.000 {method 'get' of 'sage.misc.weak_dict.WeakValueDictionary' objects}
+        1    0.000    0.000    0.000    0.000 category.py:2296(__and__)
+      230    0.000    0.000    0.000    0.000 multi_power_series_ring.py:910(_poly_ring)
+        3    0.000    0.000    0.000    0.000 rings.py:604(_Hom_)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:86(WellGenerated)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1593(find_spec)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1287(create_module)
+        1    0.000    0.000    0.000    0.000 {built-in method _imp.create_dynamic}
+       20    0.000    0.000    0.000    0.000 permutation.py:531(__init__)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:1(<module>)
+       41    0.000    0.000    0.000    0.000 __init__.py:209(findall)
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1183(get_data)
+       40    0.000    0.000    0.000    0.000 alphabet.py:58(build_alphabet)
+      153    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:22(FiniteComplexReflectionGroups)
+        6    0.000    0.000    0.000    0.000 integer_vector.py:677(__classcall_private__)
+       21    0.000    0.000    0.000    0.000 infinity.py:1128(_element_constructor_)
+        1    0.000    0.000    0.000    0.000 permutation.py:7251(__init__)
+        3    0.000    0.000    0.000    0.000 homset.py:46(RingHomset)
+        5    0.000    0.000    0.000    0.000 homset.py:610(__init__)
+       20    0.000    0.000    0.000    0.000 words.py:224(_check)
+    57/52    0.000    0.000    0.000    0.000 category.py:3146(is_subcategory)
+     1450    0.000    0.000    0.000    0.000 {built-in method sage.structure.richcmp.rich_to_bool}
+        1    0.000    0.000    0.000    0.000 sageinspect.py:410(_extract_source)
+     1507    0.000    0.000    0.000    0.000 power_series_ring.py:1030(_poly_ring)
+        3    0.000    0.000    0.000    0.000 homset.py:78(__init__)
+        1    0.000    0.000    0.000    0.000 sageinspect.py:389(_getblock)
+        3    0.000    0.000    0.000    0.000 homset.py:1267(__init__)
+        1    0.000    0.000    0.000    0.000 multi_power_series_ring_element.py:1102(monomial_coefficients)
+        5    0.000    0.000    0.000    0.000 integer_vector_weighted.py:106(__init__)
+       18    0.000    0.000    0.000    0.000 category_with_axiom.py:2017(__classget__)
+       27    0.000    0.000    0.000    0.000 integer_vector.py:1200(__iter__)
+      800    0.000    0.000    0.000    0.000 finite_field_prime_modn.py:251(gen)
+       84    0.000    0.000    0.000    0.000 __init__.py:280(_compile)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:733(_init_module_attrs)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1295(exec_module)
+        6    0.000    0.000    0.000    0.000 integer_vector.py:1163(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method _imp.exec_dynamic}
+       26    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:140(_path_stat)
+       27    0.000    0.000    0.000    0.000 {built-in method posix.stat}
+      115    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1390(_handle_fromlist)
+       16    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:482(cache_from_source)
+       20    0.000    0.000    0.000    0.000 finite_word.py:7129(evaluation_dict)
+       41    0.000    0.000    0.000    0.000 __init__.py:164(match)
+       48    0.000    0.000    0.000    0.000 tokenize.py:460(tokenize)
+      146    0.000    0.000    0.000    0.000 weakref.py:347(__new__)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:304(acquire)
+    23/10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1367(__iter__)
+        6    0.000    0.000    0.000    0.000 integer_vector.py:724(__init__)
+       41    0.000    0.000    0.000    0.000 term_order.py:1908(__eq__)
+        8    0.000    0.000    0.000    0.000 {built-in method _io.open_code}
+    36/10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1353(_recalculate)
+        2    0.000    0.000    0.000    0.000 category_with_axiom.py:1881(_base_category_class_and_axiom)
+        1    0.000    0.000    0.000    0.000 {method 'readlines' of '_io._IOBase' objects}
+        2    0.000    0.000    0.000    0.000 category_with_axiom.py:1712(base_category_class_and_axiom)
+        1    0.000    0.000    0.000    0.000 finitely_generated_semigroups.py:1(<module>)
+       17    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:632(cached)
+      470    0.000    0.000    0.000    0.000 {built-in method builtins.issubclass}
+       41    0.000    0.000    0.000    0.000 {method 'findall' of 're.Pattern' objects}
+       12    0.000    0.000    0.000    0.000 {method 'monomial_coefficients' of 'sage.rings.polynomial.multi_polynomial_libsingular.MPolynomial_libsingular' objects}
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:1108(WellGenerated)
+       20    0.000    0.000    0.000    0.000 combinat.py:1523(__init__)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:611(_get_cached)
+      305    0.000    0.000    0.000    0.000 dynamic_class.py:438(<genexpr>)
+       34    0.000    0.000    0.000    0.000 category.py:3123(_subcategory_hook_)
+        8    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        1    0.000    0.000    0.000    0.000 finite_coxeter_groups.py:1(<module>)
+      260    0.000    0.000    0.000    0.000 {method 'canonical_coercion' of 'sage.structure.coerce.CoercionModel' objects}
+      131    0.000    0.000    0.000    0.000 weakref.py:352(__init__)
+       60    0.000    0.000    0.000    0.000 {method 'cardinality' of 'sage.sets.pythonclass.Set_PythonType_class' objects}
+       47    0.000    0.000    0.000    0.000 tokenize.py:569(_generate_tokens_from_c_tokenizer)
+       62    0.000    0.000    0.000    0.000 {built-in method sage.categories.category_cy_helper._flatten_categories}
+      233    0.000    0.000    0.000    0.000 {method 'get' of 'dict' objects}
+       49    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:126(_path_join)
+      228    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0xa44b40}
+       13    0.000    0.000    0.000    0.000 category_with_axiom.py:2454(axioms)
+        1    0.000    0.000    0.000    0.000 sageinspect.py:1061(_sage_getargspec_cython)
+        1    0.000    0.000    0.000    0.000 kernel_subgroup.py:1(<module>)
+        1    0.000    0.000    0.000    0.000 finitely_generated_semigroups.py:20(FinitelyGeneratedSemigroups)
+        1    0.000    0.000    0.000    0.000 objects.py:82(Homsets)
+       24    0.000    0.000    0.000    0.000 decorators.py:741(wrapped)
+       12    0.000    0.000    0.000    0.000 inspect.py:1321(getargs)
+        1    0.000    0.000    0.000    0.000 power_series_ring.py:180(PowerSeriesRing)
+        1    0.000    0.000    0.000    0.000 sageinspect.py:221(_extract_embedded_position)
+        1    0.000    0.000    0.000    0.000 complex_reflection_groups.py:1(<module>)
+        1    0.000    0.000    0.000    0.000 covariant_functorial_construction.py:385(category_of)
+        1    0.000    0.000    0.000    0.000 power_series_ring.py:429(_multi_variate)
+      260    0.000    0.000    0.000    0.000 {built-in method sage.structure.element.parent}
+        1    0.000    0.000    0.000    0.000 groupoid.py:35(__init__)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:426(_get_module_lock)
+       36    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1349(_get_parent_path)
+       12    0.000    0.000    0.000    0.000 {method 'update' of 'dict' objects}
+       35    0.000    0.000    0.000    0.000 category.py:3144(<genexpr>)
+       43    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:645(parent)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1588(_get_spec)
+        1    0.000    0.000    0.000    0.000 homsets.py:23(default_super_categories)
+       23    0.000    0.000    0.000    0.000 {sage.misc.cachefunc.cached_method}
+      440    0.000    0.000    0.000    0.000 words.py:174(alphabet)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:162(__enter__)
+      260    0.000    0.000    0.000    0.000 {built-in method sage.structure.coerce.py_scalar_to_element}
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:159(_path_isfile)
+        1    0.000    0.000    0.000    0.000 finite_coxeter_groups.py:22(FiniteCoxeterGroups)
+        1    0.000    0.000    0.000    0.000 multi_power_series_ring.py:310(__classcall__)
+       16    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:132(_path_split)
+       10    0.000    0.000    0.000    0.000 <string>:89(_init_packed_matrix)
+        1    0.000    0.000    0.000    0.000 finitely_generated_magmas.py:1(<module>)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:1124(ParentMethods)
+       41    0.000    0.000    0.000    0.000 term_order.py:866(__hash__)
+       10    0.000    0.000    0.000    0.000 category_with_axiom.py:1809(axiom_of_nested_class)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:150(_path_is_mode_type)
+       80    0.000    0.000    0.000    0.000 {built-in method time.time}
+      122    0.000    0.000    0.000    0.000 {method 'rpartition' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 cactus_group.py:32(CactusGroup)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:124(setdefault)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:420(__exit__)
+       21    0.000    0.000    0.000    0.000 infinity.py:1306(__init__)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:802(spec_from_file_location)
+       20    0.000    0.000    0.000    0.000 {built-in method sage.sets.pythonclass.Set_PythonType}
+        9    0.000    0.000    0.000    0.000 {method '__exit__' of '_io._IOBase' objects}
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1202(path_stats)
+    13/11    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1376(__len__)
+       43    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        1    0.000    0.000    0.000    0.000 sageinspect.py:1016(_sage_getargspec_from_ast)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:372(release)
+        1    0.000    0.000    0.000    0.000 multi_power_series_ring_element.py:1513(is_unit)
+        1    0.000    0.000    0.000    0.000 kernel_subgroup.py:25(KernelSubgroup)
+      6/3    0.000    0.000    0.000    0.000 category.py:2005(axioms)
+      115    0.000    0.000    0.000    0.000 {method 'add_bigoh' of 'sage.rings.power_series_ring_element.PowerSeries' objects}
+      126    0.000    0.000    0.000    0.000 category_with_axiom.py:2499(<genexpr>)
+       46    0.000    0.000    0.000    0.000 __init__.py:447(_make)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       36    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1339(_find_parent_path_names)
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:666(_classify_pyc)
+        1    0.000    0.000    0.000    0.000 {built-in method _io.open}
+       63    0.000    0.000    0.000    0.000 {method 'lower' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 complex_reflection_groups.py:21(ComplexReflectionGroups)
+       64    0.000    0.000    0.000    0.000 inspect.py:295(isclass)
+       36    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1226(__exit__)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:143(ParentMethods)
+       24    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:84(_unpack_uint32)
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:699(_validate_timestamp_pyc)
+        1    0.000    0.000    0.000    0.000 finite_coxeter_groups.py:64(ParentMethods)
+    35/16    0.000    0.000    0.000    0.000 category.py:2023(<genexpr>)
+       20    0.000    0.000    0.000    0.000 combinat.py:1108(__init__)
+        3    0.000    0.000    0.000    0.000 sageinspect.py:875(_split_syntactical_unit)
+       82    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 category_with_axiom.py:1698(uncamelcase)
+        1    0.000    0.000    0.000    0.000 ast.py:34(parse)
+        1    0.000    0.000    0.000    0.000 category.py:1324(full_super_categories)
+        6    0.000    0.000    0.000    0.000 <frozen abc>:117(__instancecheck__)
+       80    0.000    0.000    0.000    0.000 polynomial_ring_constructor.py:645(<genexpr>)
+        1    0.000    0.000    0.000    0.000 finite_permutation_groups.py:92(extra_super_categories)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.compile}
+        1    0.000    0.000    0.000    0.000 tokenize.py:352(detect_encoding)
+       28    0.000    0.000    0.000    0.000 category_types.py:216(_make_named_class_key)
+       54    0.000    0.000    0.000    0.000 {built-in method _imp.release_lock}
+       13    0.000    0.000    0.000    0.000 sageinspect.py:300(_extract_embedded_signature)
+       68    0.000    0.000    0.000    0.000 {method 'join' of 'str' objects}
+       47    0.000    0.000    0.000    0.000 sageinspect.py:356(tokeneater)
+      114    0.000    0.000    0.000    0.000 {method 'rstrip' of 'str' objects}
+       42    0.000    0.000    0.000    0.000 integer_vector.py:1745(integer_vectors_nk_fast_iter)
+        3    0.000    0.000    0.000    0.000 category.py:1264(is_full_subcategory)
+        6    0.000    0.000    0.000    0.000 {built-in method _abc._abc_instancecheck}
+       24    0.000    0.000    0.000    0.000 {method 'format' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 __init__.py:179(sub)
+       14    0.000    0.000    0.000    0.000 {built-in method builtins.setattr}
+       60    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:491(_verbose_message)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1128(find_spec)
+        2    0.000    0.000    0.000    0.000 __init__.py:73(import_module)
+        1    0.000    0.000    0.000    0.000 finitely_generated_magmas.py:17(FinitelyGeneratedMagmas)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:1237(Irreducible)
+       28    0.000    0.000    0.000    0.000 {method 'split' of 'str' objects}
+       20    0.000    0.000    0.000    0.000 combinat.py:1444(__iter__)
+       32    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:134(<genexpr>)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:445(cb)
+       36    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1222(__enter__)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:232(__init__)
+       41    0.000    0.000    0.000    0.000 {built-in method builtins.hash}
+       20    0.000    0.000    0.000    0.000 abstract_word.py:45(parent)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:764(Irreducible)
+       15    0.000    0.000    0.000    0.000 category_types.py:378(_subcategory_hook_)
+       41    0.000    0.000    0.000    0.000 inspect.py:741(getmro)
+       41    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+       41    0.000    0.000    0.000    0.000 term_order.py:2133(is_block_order)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1375(_gcd_import)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:74(__new__)
+        6    0.000    0.000    0.000    0.000 <frozen codecs>:319(decode)
+       20    0.000    0.000    0.000    0.000 {method 'sort' of 'list' objects}
+       54    0.000    0.000    0.000    0.000 {built-in method _imp.acquire_lock}
+       40    0.000    0.000    0.000    0.000 {method 'items' of 'dict' objects}
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:82(remove)
+        1    0.000    0.000    0.000    0.000 <frozen genericpath>:16(exists)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:982(find_spec)
+        8    0.000    0.000    0.000    0.000 sageinspect.py:400(readline)
+        1    0.000    0.000    0.000    0.000 {method 'coefficients' of 'sage.rings.power_series_ring_element.PowerSeries' objects}
+        3    0.000    0.000    0.000    0.000 <frozen posixpath>:71(join)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:185(_path_abspath)
+        2    0.000    0.000    0.000    0.000 {method 'sub' of 're.Pattern' objects}
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:643(_check_name_wrapper)
+       45    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        1    0.000    0.000    0.000    0.000 finitely_generated_semigroups.py:193(Finite)
+        1    0.000    0.000    0.000    0.000 {method 'is_unit' of 'sage.rings.polynomial.multi_polynomial.MPolynomial' objects}
+       14    0.000    0.000    0.000    0.000 sageinspect.py:1858(_sage_getdoc_unformatted)
+       17    0.000    0.000    0.000    0.000 category.py:3097(super_categories)
+        9    0.000    0.000    0.000    0.000 __init__.py:102(find_spec)
+       20    0.000    0.000    0.000    0.000 {method 'zero' of 'sage.rings.ring.Ring' objects}
+        6    0.000    0.000    0.000    0.000 <frozen abc>:121(__subclasscheck__)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:173(__exit__)
+        5    0.000    0.000    0.000    0.000 abstract_method.py:15(abstract_method)
+        2    0.000    0.000    0.000    0.000 unique_factorization_domains.py:64(__contains__)
+       14    0.000    0.000    0.000    0.000 category.py:3057(<genexpr>)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:79(__init__)
+        1    0.000    0.000    0.000    0.000 permutation_groups.py:51(super_categories)
+       13    0.000    0.000    0.000    0.000 inspect.py:371(isfunction)
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:48(_new_module)
+        5    0.000    0.000    0.000    0.000 abstract_method.py:143(__init__)
+        3    0.000    0.000    0.000    0.000 abstract_method.py:137(<lambda>)
+        1    0.000    0.000    0.000    0.000 misc.py:232(newton_method_sizes)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:180(_path_isabs)
+        1    0.000    0.000    0.000    0.000 integer_mod_ring.py:1123(_element_constructor_)
+        1    0.000    0.000    0.000    0.000 finitely_generated_semigroups.py:74(ParentMethods)
+        9    0.000    0.000    0.000    0.000 {built-in method _imp.is_builtin}
+        1    0.000    0.000    0.000    0.000 category.py:1203(structure)
+        1    0.000    0.000    0.000    0.000 cactus_group.py:862(PureCactusGroup)
+        6    0.000    0.000    0.000    0.000 {built-in method _abc._abc_subclasscheck}
+       18    0.000    0.000    0.000    0.000 {method 'endswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:84(SubcategoryMethods)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:1257(ParentMethods)
+        1    0.000    0.000    0.000    0.000 covariant_functorial_construction.py:295(__classcall__)
+        9    0.000    0.000    0.000    0.000 {built-in method _imp.find_frozen}
+       18    0.000    0.000    0.000    0.000 {method '__exit__' of '_thread.RLock' objects}
+        6    0.000    0.000    0.000    0.000 {built-in method _codecs.utf_8_decode}
+        4    0.000    0.000    0.000    0.000 {method 'search' of 're.Pattern' objects}
+       24    0.000    0.000    0.000    0.000 {built-in method from_bytes}
+        1    0.000    0.000    0.000    0.000 {function StandardPermutations_n._coerce_map_from_ at 0x7d17c416a0c0}
+        2    0.000    0.000    0.000    0.000 sageinspect.py:171(isclassinstance)
+       16    0.000    0.000    0.000    0.000 {method 'rfind' of 'str' objects}
+       21    0.000    0.000    0.000    0.000 {method 'one' of 'sage.rings.ring.Ring' objects}
+        1    0.000    0.000    0.000    0.000 tokenize.py:376(read_or_stop)
+        1    0.000    0.000    0.000    0.000 {sage.rings.finite_rings.integer_mod.IntegerMod}
+       12    0.000    0.000    0.000    0.000 inspect.py:492(iscode)
+        1    0.000    0.000    0.000    0.000 <frozen posixpath>:60(isabs)
+        1    0.000    0.000    0.000    0.000 finite_coxeter_groups.py:907(ElementMethods)
+       18    0.000    0.000    0.000    0.000 {built-in method _thread.get_ident}
+       29    0.000    0.000    0.000    0.000 {built-in method posix.fspath}
+        9    0.000    0.000    0.000    0.000 {method 'pop' of 'dict' objects}
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1469(_path_importer_cache)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:643(ElementMethods)
+        1    0.000    0.000    0.000    0.000 finite_complex_reflection_groups.py:780(ParentMethods)
+        1    0.000    0.000    0.000    0.000 finitely_generated_magmas.py:40(ParentMethods)
+       12    0.000    0.000    0.000    0.000 category_with_axiom.py:1950(_axiom)
+        1    0.000    0.000    0.000    0.000 tokenize.py:382(find_cookie)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:599(__init__)
+        9    0.000    0.000    0.000    0.000 {built-in method _weakref._remove_dead_weakref}
+        8    0.000    0.000    0.000    0.000 {method 'group' of 're.Match' objects}
+        9    0.000    0.000    0.000    0.000 {built-in method _thread.allocate_lock}
+        1    0.000    0.000    0.000    0.000 complex_reflection_groups.py:126(ParentMethods)
+        2    0.000    0.000    0.000    0.000 bimodules.py:62(_make_named_class_key)
+        1    0.000    0.000    0.000    0.000 ast.py:403(visit)
+        1    0.000    0.000    0.000    0.000 magmas.py:791(__init_extra__)
+       10    0.000    0.000    0.000    0.000 multiarray.py:153(concatenate)
+       10    0.000    0.000    0.000    0.000 homset.py:774(homset_category)
+        9    0.000    0.000    0.000    0.000 {method 'remove' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 homset.py:47(FiniteFieldHomset)
+        1    0.000    0.000    0.000    0.000 finite_coxeter_groups.py:53(extra_super_categories)
+        8    0.000    0.000    0.000    0.000 {built-in method _imp._fix_co_filename}
+       20    0.000    0.000    0.000    0.000 words.py:255(_sortkey_trivial)
+        1    0.000    0.000    0.000    0.000 unique_factorization_domains.py:88(_contains_helper)
+        2    0.000    0.000    0.000    0.000 category_with_axiom.py:1709(<lambda>)
+        8    0.000    0.000    0.000    0.000 {method 'encode' of 'str' objects}
+       13    0.000    0.000    0.000    0.000 {built-in method builtins.callable}
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:412(__init__)
+        1    0.000    0.000    0.000    0.000 cactus_group.py:547(Element)
+        5    0.000    0.000    0.000    0.000 homset.py:1204(domain)
+        1    0.000    0.000    0.000    0.000 <frozen codecs>:309(__init__)
+        5    0.000    0.000    0.000    0.000 homset.py:1219(codomain)
+        1    0.000    0.000    0.000    0.000 <string>:1(<lambda>)
+        4    0.000    0.000    0.000    0.000 <frozen posixpath>:41(_get_sep)
+        1    0.000    0.000    0.000    0.000 sageinspect.py:349(__init__)
+        8    0.000    0.000    0.000    0.000 {method 'strip' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 category.py:2969(_subcategory_hook_)
+        9    0.000    0.000    0.000    0.000 category_with_axiom.py:2133(extra_super_categories)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:158(__init__)
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1153(__init__)
+        1    0.000    0.000    0.000    0.000 {method 'precision_absolute' of 'sage.rings.power_series_ring_element.PowerSeries' objects}
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.next}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1285(_sanity_check)
+        4    0.000    0.000    0.000    0.000 {method 'category' of 'sage.rings.ring.Ring' objects}
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:653(has_location)
+        1    0.000    0.000    0.000    0.000 finite_field_prime_modn.py:355(degree)
+        9    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:71(_relax_case)
+        1    0.000    0.000    0.000    0.000 complex_reflection_groups.py:83(super_categories)
+        1    0.000    0.000    0.000    0.000 finitely_generated_semigroups.py:51(extra_super_categories)
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1178(get_filename)
+        1    0.000    0.000    0.000    0.000 {method '_first_ngens' of 'sage.structure.category_object.CategoryObject' objects}
+        1    0.000    0.000    0.000    0.000 {method 'base_ring' of 'sage.structure.element.Element' objects}
+        3    0.000    0.000    0.000    0.000 {method 'lstrip' of 'str' objects}
+        8    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:986(create_module)
+        1    0.000    0.000    0.000    0.000 {sage.misc.persist.register_unpickle_override}
+        3    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 kernel_subgroup.py:199(Element)
+        3    0.000    0.000    0.000    0.000 {method 'base_ring' of 'sage.structure.category_object.CategoryObject' objects}
+        1    0.000    0.000    0.000    0.000 {method 'find' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {method '_internal_coerce_map_from' of 'sage.structure.parent.Parent' objects}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'bytes' objects}
+        1    0.000    0.000    0.000    0.000 temporary_file.py:531(spyx_tmp)
+        1    0.000    0.000    0.000    0.000 {method 'decode' of 'bytes' objects}
+        1    0.000    0.000    0.000    0.000 finitely_generated_semigroups.py:195(ParentMethods)
+        1    0.000    0.000    0.000    0.000 {method 'removeprefix' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {method 'reverse' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 <string>:1(<module>)
+        1    0.000    0.000    0.000    0.000 multi_power_series_ring_element.py:1310(prec)
+        1    0.000    0.000    0.000    0.000 {method 'ngens' of 'sage.rings.polynomial.multi_polynomial_libsingular.MPolynomialRing_libsingular' objects}
+        1    0.000    0.000    0.000    0.000 sageinspect.py:516(visit_arg)
+        1    0.000    0.000    0.000    0.000 nonexact.py:48(default_prec)
+        1    0.000    0.000    0.000    0.000 category.py:3109(additional_structure)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1276(__init__)
+        1    0.000    0.000    0.000    0.000 <frozen codecs>:260(__init__)
+        1    0.000    0.000    0.000    0.000 groupoid.py:62(_make_named_class_key)

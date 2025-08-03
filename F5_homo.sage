@@ -1,6 +1,7 @@
 load("base_F5.sage")
 import copy
 import time
+import cProfile
 
 class MacHom(BaseMac):
     def __init__(self, n, d, F, m):
@@ -8,6 +9,11 @@ class MacHom(BaseMac):
         self.d = d
         #monomials_str = ['x' + str(i) + 'bar' for i in range(1, n//2 + 1)] + ['y' + str(i) + 'bar' for i in range(1, n//2 + 1)]
         monomials_str = ['x' + str(i) for i in range(1, n//2 + 1)] + ['y' + str(i) for i in range(1, n//2 + 1)]
+        self.monomial_hash_list = {}  # Monomial -> column index
+        self.monomial_inverse_search = []  # Column index -> monomial
+        self.poly_ring = PolynomialRing(F, monomials_str, order='degrevlex')
+        self.variables = [self.poly_ring(m) for m in monomials_str]
+        self.monomial_ordered_list_deg_d(d)
         super().__init__(F, monomials_str, m)
 
     def monomial_ordered_list_deg_d(self, d):
@@ -49,22 +55,11 @@ class MacHom(BaseMac):
                 x_lambda = 1
             else:
                 x_lambda = e.monomials()[0].variables()[0] #biggest variable in e
-                #print(f"{e.monomials()}")
-            #print(f"e: {e}, x_lambda:{x_lambda}")
-            #good_crit = True
             for x_i in self.variables:
                 if x_i >= x_lambda:
-                    if f_i.total_degree() == 1:
-                        #if not self.F5_criterion(x_i*e, f_i, i, Mac_d_1):
-                        self.add_line(f_i, i, x_i*e)
-                    elif f_i.total_degree() == 2:
-                        u = x_i * e
-                        crit = False
-                        for (ii, lm) in self.crit:
-                            if ii < i and lm == u:
-                                crit = True
-                        if not crit:
-                            self.add_line(f_i, i, u)
+                    u = x_i * e
+                    if not any(u in self.crit[ii] for ii in range(i)):
+                        self.add_line(f_i, i, u)
         return
 
 def F5Matrix(F, dmax):
@@ -111,11 +106,12 @@ def F5Matrix(F, dmax):
         #Mac_d.matrix = matrix(GF(2), Mac_d.matrix)
         #print("done conversion")
         #tmp_Mac = copy.deepcopy(Mac_d)
+        Mac_d.finalize_matrix()
         Mac_d.gauss(debug=True)
         #update_gb(gb, tmp_Mac, Mac_d)
         reductions_to_zero, lignes_0 = Mac_d.verify_reductions_zero()
-        ncols = len(Mac_d.monomial_hash_list)
-        nrows = len(Mac_d.matrix) // ncols
+        nrows = Mac_d._nrows if hasattr(Mac_d, '_nrows') else Mac_d._current_row
+        ncols = Mac_d._ncols
         print(f"number of reductions to 0 in degree {d} with normal Gauss: {reductions_to_zero} / {nrows}")
         print(f"Corank of degree {d}: {ncols - nrows + reductions_to_zero} ----- Value in Hilbert Series: {hilbert_series[d]}")
 
@@ -153,7 +149,7 @@ def F5Matrix(F, dmax):
     return gb
 
 if __name__ == '__main__':
-    F = homogenized_ideal(doit(10, 11))
+    F = homogenized_ideal(doit(20, 21))
     #save(F, "test.sobj")
     #F = load("test.sobj")
     #for f in F:
@@ -172,16 +168,16 @@ if __name__ == '__main__':
     #print(f"Hilbert Series: {hilbert_series}")
     D = Ideal(F).degree_of_semi_regularity()
     print(generating_bardet_series(F))
-    for i in F:
-        print(i.total_degree())
     print(f"degree of semi-regularity of F: {D}")
 
     F = sorted(F, key=lambda f: f.degree())
-    gb = F5Matrix(F, D)
+    cProfile.run("F5Matrix(F, D)", sort='cumtime')
+
+    """
     print(len(gb))
     print(Ideal(gb).basis_is_groebner())
 
-    """
+
     #Test linéarisation avec Frobenius
     F = load("../MPCitH_SBC/system/sage/system_bilin_36_37_test.sobj")
     m = len(F)
@@ -199,11 +195,3 @@ if __name__ == '__main__':
     print(Mac.matrix.rank())
     #print(F)
     """
-
-#105 reduc à 0 au deg 4
-#1470 reduc à 0 au deg 5
-#
-#pour SBC:
-#245 reduc à 0 au deg 4
-#2604 reduc à 0 au deg 5
-

@@ -1,10 +1,11 @@
 load("base_F5.sage")
+#load("REF.sage")
 import copy
 import time
 import cProfile
 
 class MacHom(BaseMac):
-    def __init__(self, n, d, F, m):
+    def __init__(self, n, d, F, h):
         self.n = n
         self.d = d
         #monomials_str = ['x' + str(i) + 'bar' for i in range(1, n//2 + 1)] + ['y' + str(i) + 'bar' for i in range(1, n//2 + 1)]
@@ -14,7 +15,7 @@ class MacHom(BaseMac):
         self.poly_ring = PolynomialRing(F, monomials_str, order='degrevlex')
         self.variables = [self.poly_ring(m) for m in monomials_str]
         self.monomial_ordered_list_deg_d(d)
-        super().__init__(F, monomials_str, m)
+        super().__init__(F, monomials_str, h)
 
     def monomial_ordered_list_deg_d(self, d):
         """
@@ -55,11 +56,16 @@ class MacHom(BaseMac):
                 x_lambda = 1
             else:
                 x_lambda = e.monomials()[0].variables()[0] #biggest variable in e
+            
+            first = False
             for x_i in self.variables:
                 if x_i >= x_lambda:
                     u = x_i * e
                     if not any(u in self.crit[ii] for ii in range(i)):
-                        self.add_line(f_i, i, u)
+                        if first:
+                            self.matrix[self.matrix_index] = np.roll(self.matrix[self.matrix_index - 1], 1)
+                        else:
+                            self.add_line(f_i, i, u)
         return
 
 def F5Matrix(F, dmax):
@@ -89,7 +95,7 @@ def F5Matrix(F, dmax):
     for d in range(F[0].total_degree(), dmax+1):
         print(f"\n{'-' * 20} d={d} {'-' * 20}\n")
         t_deg_start = time.time()
-        Mac_d = MacHom(n, d, R, m)
+        Mac_d = MacHom(n, d, R, hilbert_series[d])
         Mac_d.monomial_ordered_list_deg_d(d)
         t0 = time.time()
         Mac_d.F5_criterion(Mac_d_2)
@@ -103,17 +109,17 @@ def F5Matrix(F, dmax):
                 Mac_d.add_lines(f_i, i, Mac_d_1)
         t1 = time.time()
         print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
-        #Mac_d.matrix = matrix(GF(2), Mac_d.matrix)
-        #print("done conversion")
+        print(Mac_d.matrix)
         #tmp_Mac = copy.deepcopy(Mac_d)
-        Mac_d.finalize_matrix()
+        t0 = time.time()
         Mac_d.gauss(debug=True)
+        t1 = time.time()
+        print(f"[TIMER] Temps pour Gauss (matrice {Mac_d.nrows}x{Mac_d.ncols}) : {t1 - t0:.4f} s")
         #update_gb(gb, tmp_Mac, Mac_d)
         reductions_to_zero, lignes_0 = Mac_d.verify_reductions_zero()
-        nrows = Mac_d._nrows if hasattr(Mac_d, '_nrows') else Mac_d._current_row
-        ncols = Mac_d._ncols
-        print(f"number of reductions to 0 in degree {d} with normal Gauss: {reductions_to_zero} / {nrows}")
-        print(f"Corank of degree {d}: {ncols - nrows + reductions_to_zero} ----- Value in Hilbert Series: {hilbert_series[d]}")
+        print(f"number of reductions to 0 in degree {d} with normal Gauss: {reductions_to_zero} / {Mac_d.nrows}")
+        print(f"Corank of degree {d}: {Mac_d.ncols- Mac_d.nrows + reductions_to_zero} ----- Value in Hilbert Series: {hilbert_series[d]}")
+        print(Mac_d.matrix)
 
         if reductions_to_zero > 0:
             for i in lignes_0:
@@ -149,7 +155,7 @@ def F5Matrix(F, dmax):
     return gb
 
 if __name__ == '__main__':
-    F = homogenized_ideal(doit(20, 21))
+    #F = homogenized_ideal(doit(4, 5))
     #save(F, "test.sobj")
     #F = load("test.sobj")
     #for f in F:
@@ -162,7 +168,7 @@ if __name__ == '__main__':
     """
     
     #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_18_19.sobj"))
-    #F = homogenized_ideal(doit_bilinear(5, 5, 11))
+    F = homogenized_ideal(doit_bilinear(4, 4, 5))
     #series_ring.<z> = PowerSeriesRing(ZZ)
     #hilbert_series = series_ring(Ideal(F).hilbert_series())
     #print(f"Hilbert Series: {hilbert_series}")
@@ -171,7 +177,8 @@ if __name__ == '__main__':
     print(f"degree of semi-regularity of F: {D}")
 
     F = sorted(F, key=lambda f: f.degree())
-    cProfile.run("F5Matrix(F, D)", sort='cumtime')
+    F5Matrix(F, 3)
+    #cProfile.run("F5Matrix(F, D)", sort='cumtime')
 
     """
     print(len(gb))

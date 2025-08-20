@@ -1,5 +1,4 @@
 #include <immintrin.h>
-#include <omp.h>
 #include "gauss_core.h"
 
 static inline void xor_rows_avx2(uint64_t *restrict a, uint64_t *restrict b, int words) {
@@ -44,57 +43,6 @@ static inline int find_pivot_bit_fast(uint64_t *row, int words_per_row) {
         }
     }
     return -1;
-}
-
-void gaussian_elim_packed(uint64_t *matrix, int nrows, int words_per_row) {
-    omp_set_num_threads(omp_get_max_threads());
-    for (int i = 0; i < nrows - 1; ++i) {
-        uint64_t *pivot = matrix + i * words_per_row;
-        int pivot_bit = -1;
-        for (int w = 0; w < words_per_row; ++w) {
-            if (pivot[w]) {
-                pivot_bit = __builtin_ctzl(pivot[w]) + 64 * w;
-                break;
-            }
-        }
-        if (pivot_bit == -1) continue;
-        int pivot_word = pivot_bit / 64;
-        uint64_t pivot_mask = 1ULL << (pivot_bit % 64);
-        #pragma omp parallel for schedule(static) if(nrows - i > 64)
-        for (int j = i + 1; j < nrows; ++j) {
-            uint64_t *row = matrix + j * words_per_row;
-            if (row[pivot_word] & pivot_mask) {
-                xor_rows_avx2(pivot, row, words_per_row);
-            }
-        }
-    }
-}
-
-void gaussian_elim_packed_minimal_optimized(uint64_t *matrix, int nrows, int words_per_row) {
-    for (int i = 0; i < nrows - 1; ++i) {
-        uint64_t * __restrict pivot = matrix + i * words_per_row;
-        int pivot_bit = -1;
-        
-        // EXACT same pivot finding logic as original
-        for (int w = 0; w < words_per_row; ++w) {
-            if (pivot[w]) {
-                pivot_bit = __builtin_ctzl(pivot[w]) + 64 * w;
-                break;
-            }
-        }
-        
-        if (pivot_bit == -1) continue;
-        
-        int pivot_word = pivot_bit / 64;
-        uint64_t pivot_mask = 1ULL << (pivot_bit % 64);
-        
-        for (int j = i + 1; j < nrows; ++j) {
-            uint64_t * __restrict row = matrix + j * words_per_row;
-            if (row[pivot_word] & pivot_mask) {
-                xor_rows_avx2(pivot, row, words_per_row);
-            }
-        }
-    }
 }
 
 // Cache-optimized version that maintains identical algorithm behavior
@@ -146,37 +94,3 @@ void gaussian_elim_packed_cache_optimized(uint64_t *matrix, int nrows, int words
     }
 }
 
-void gaussian_elim_packed_prefetch_optimized(uint64_t *matrix, int nrows, int words_per_row) {
-    for (int i = 0; i < nrows - 1; ++i) {
-        uint64_t * __restrict pivot = matrix + i * words_per_row;
-        int pivot_bit = -1;
-        
-        // EXACT same pivot finding logic as original
-        for (int w = 0; w < words_per_row; ++w) {
-            if (pivot[w]) {
-                pivot_bit = __builtin_ctzl(pivot[w]) + 64 * w;
-                break;
-            }
-        }
-        
-        if (pivot_bit == -1) continue;
-        
-        int pivot_word = pivot_bit / 64;
-        uint64_t pivot_mask = 1ULL << (pivot_bit % 64);
-        
-        // Simple sequential processing with smart prefetching
-        for (int j = i + 1; j < nrows; ++j) {
-            uint64_t * __restrict row = matrix + j * words_per_row;
-            
-            // Prefetch next few rows
-            if (j + 2 < nrows) {
-                uint64_t *prefetch_row = matrix + (j + 2) * words_per_row;
-                _mm_prefetch((char*)prefetch_row, _MM_HINT_T0);
-            }
-            
-            if (row[pivot_word] & pivot_mask) {
-                xor_rows_avx2(pivot, row, words_per_row);
-            }
-        }
-    }
-}

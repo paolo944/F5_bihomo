@@ -2,8 +2,8 @@ from setuptools import setup, Extension
 from Cython.Build import cythonize
 import numpy as np
 
-compile_args = ["-O3", "-mavx2", "-march=native", "-mtune=native", "-funroll-loops", "-flto", "-fopenmp"]
-link_args = ["-fopenmp"]
+compile_args = ["-O3", "-mavx2", "-march=native", "-mtune=native", "-funroll-loops", "-flto"]
+link_args = []
 
 extensions = [
     Extension(
@@ -12,11 +12,11 @@ extensions = [
         include_dirs=[np.get_include(), "."],
         extra_compile_args=compile_args,
         extra_link_args=link_args,
-        language="c",
+        language="c",  # reste en C pur
     ),
     Extension(
         "pack_utils",
-        sources=["pack_utils.pyx"],  # ✅ correction ici
+        sources=["pack_utils.pyx"],
         include_dirs=[np.get_include(), "."],
         extra_compile_args=compile_args,
         extra_link_args=link_args,

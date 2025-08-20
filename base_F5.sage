@@ -39,47 +39,21 @@ def unpack_matrix(packed, nrows, ncols, words_per_row):
     return matrix
 
 class BaseMac:
-    def __init__(self, F, monomials_str, estimated_total_size=None, estimated_nrows=None):
-        self.matrix = None  # The Macaulay matrix
+    def __init__(self, F, monomials_str, h):
         self.sig = []  # Index of the polynomial used in each row
 
         self.crit = defaultdict(set)
 
-        # For GF(2), we'll work directly with packed matrices
-        if self.poly_ring.characteristic() == 2:
-            self._ncols = None  # Will be set when we know the number of columns
-            self._words_per_row = None
-            self._current_row = 0
-            self._estimated_nrows = estimated_nrows or 1000  # Default estimate
-            
-            if estimated_nrows:
-                # Pre-allocate packed matrix buffer
-                self._packed_buffer = None  # Will be allocated when ncols is known
-                self._use_packed_buffer = True
-            else:
-                self._packed_rows = []  # List to store packed rows
-                self._use_packed_buffer = False
-        else:
-            # For other fields, keep the original approach
-            if estimated_total_size:
-                self._buffer = np.empty(estimated_total_size, dtype=np.float64)
-                self._current_size = 0
-                self._use_buffer = True
-            else:
-                self._row_list = []
-                self._use_buffer = False
+        self.n = len(self.monomial_hash_list)
+        self.is_char2 = (self.poly_ring.characteristic() == 2)
+        self.ncols = len(self.monomial_inverse_search)
+        self.nrows = self.ncols - h
 
-    def _init_packed_matrix(self, ncols):
-        """Initialize packed matrix structure when we know the number of columns"""
-        if self.poly_ring.characteristic() == 2 and self._ncols is None:
-            self._ncols = ncols
-            self._words_per_row = (ncols + 63) // 64
-            
-            if self._use_packed_buffer:
-                self._packed_buffer = np.zeros(
-                    self._estimated_nrows * self._words_per_row, 
-                    dtype=np.uint64
-                )
+        self.matrix = np.zeros((self.nrows, self.ncols), dtype=bool) # The Macaulay matrix
+        self.matrix_index = 0
+
+        if self.is_char2:
+            self.words_per_row = None
 
     def polynomial_to_vector(self, f):
         """
@@ -87,15 +61,13 @@ class BaseMac:
         Fonction testé -> Correcte
         """
         n = len(self.monomial_hash_list)
-        if self.poly_ring.characteristic() == 2:
+        monomial_hash = self.monomial_hash_list
+        if self.is_char2:
             vec = np.zeros(n, dtype=bool)
             for monomial, coeff in zip(f.monomials(), f.coefficients()):
-                try:
-                    index = self.monomial_hash_list[monomial]
-                    vec[index] = coeff == 1
-                except KeyError:
-                    print(f"Erreur: monôme {monomial} non trouvé dans hash_list")
-                    continue
+                index = monomial_hash.get(monomial)
+                if index is not None:
+                    vec[index] = (coeff == 1)
             return vec
         else:
             vec = [0] * n
@@ -113,112 +85,26 @@ class BaseMac:
         Returns the leading monomial of row i
         Fonction testé -> Correcte
         """
-        if self.poly_ring.characteristic() == 2:
-            # For packed matrix, we need to check bits directly
-            if hasattr(self, '_words_per_row') and self._words_per_row is not None:
-                for w in range(self._words_per_row):
-                    word = int(self.matrix[i * self._words_per_row + w])
-                    if word != 0:
-                        # Find first set bit in this word
-                        for bit in range(64):
-                            if (word & (1 << bit)) != 0:
-                                j = w * 64 + bit
-                                if j < self._ncols:
-                                    return self.monomial_inverse_search[j]
-                return 0
-            else:
-                # Fallback for unpacked matrix
-                ncols = len(self.monomial_hash_list)
-                for j in range(ncols):
-                    if self.matrix[i * ncols + j]:
-                        return self.monomial_inverse_search[j]
-                return 0
+        if self.is_char2:
+            position = np.argmax(self.matrix[i])
         else:
-            positions = self.matrix.nonzero_positions_in_row(i)
-            if positions:
-                return self.monomial_inverse_search[positions[0]]
-            return 0
+            position = np.argmax(self.matrix[i] != 0)
+        if self.matrix[i, position] or self.matrix[i, position] != 0:
+            return self.monomial_inverse_search[position]
+        return 0
     
     def add_row(self, vec):
         """
         Add a row to the matrix - optimized for GF(2) to work directly with packed format
         Fonction testé -> Correcte
         """
-        if self.poly_ring.characteristic() == 2:
-            # Initialize packed matrix if not done yet
-            if self._ncols is None:
-                self._init_packed_matrix(len(vec))
-            
-            if self._use_packed_buffer:
-                if self._current_row < self._estimated_nrows:
-                    # Pack vector directly into the buffer
-                    pack_utils.pack_vector_to_row(vec, self._packed_buffer, self._current_row, self._words_per_row)
-                    self._current_row += 1
-                else:
-                    # Buffer overflow - fallback to list approach
-                    packed_row = np.zeros(self._words_per_row, dtype=np.uint64)
-                    pack_utils.pack_vector_to_row(vec, packed_row, 0, self._words_per_row)
-                    
-                    if not hasattr(self, '_packed_rows'):
-                        # Move buffer contents to list
-                        self._packed_rows = []
-                        for row_idx in range(self._current_row):
-                            row_start = row_idx * self._words_per_row
-                            row_end = (row_idx + 1) * self._words_per_row
-                            self._packed_rows.append(self._packed_buffer[row_start:row_end].copy())
-                    
-                    self._packed_rows.append(packed_row)
-                    self._use_packed_buffer = False
-            else:
-                # Pack vector into a single row
-                packed_row = np.zeros(self._words_per_row, dtype=np.uint64)
-                pack_utils.pack_vector_to_row(vec, packed_row, 0, self._words_per_row)
-                self._packed_rows.append(packed_row)
-                self._current_row += 1
+        if self.matrix_index < self.nrows:
+            self.matrix[self.matrix_index, :] = vec
         else:
-            # Original logic for non-GF(2) fields
-            if self.d < 4:
-                new_row_matrix = matrix(self.poly_ring.base_ring(), [vec])
-            else:
-                new_row_matrix = matrix(self.poly_ring.base_ring(), [vec], sparse=True)
-
-            if self.matrix is None:
-                self.matrix = new_row_matrix
-            else:
-                self.matrix = self.matrix.stack(new_row_matrix)
+            self.matrix = np.vstack([self.matrix, vec])
+            #print("erreur, pas la bonne taille de matrice")    
+        self.matrix_index += 1
         return
-
-    def finalize_matrix(self):
-        """Finalize the matrix construction"""
-        if self.poly_ring.characteristic() == 2:
-            if self._use_packed_buffer:
-                # Trim buffer to actual size
-                actual_size = self._current_row * self._words_per_row
-                self.matrix = self._packed_buffer[:actual_size]
-            elif hasattr(self, '_packed_rows'):
-                # Concatenate all packed rows
-                self.matrix = np.concatenate(self._packed_rows)
-            
-            # Store matrix dimensions for later use
-            self._nrows = self._current_row
-            
-            # Cleanup
-            if hasattr(self, '_packed_buffer'):
-                delattr(self, '_packed_buffer')
-            if hasattr(self, '_packed_rows'):
-                delattr(self, '_packed_rows')
-        else:
-            # Original logic for non-GF(2)
-            if self._use_buffer:
-                self.matrix = self._buffer[:self._current_size]
-            elif hasattr(self, '_row_list'):
-                self.matrix = np.concatenate(self._row_list)
-            
-            # Cleanup
-            if hasattr(self, '_buffer'):
-                delattr(self, '_buffer')
-            if hasattr(self, '_row_list'):
-                delattr(self, '_row_list')
 
     def vector_to_polynomial(self, i):
         """
@@ -240,13 +126,8 @@ class BaseMac:
         """
         if M_prev is None:
             return
-
-        if self.poly_ring.characteristic() == 2:
-            nrows = M_prev._nrows if hasattr(M_prev, '_nrows') else len(M_prev.matrix) // M_prev._words_per_row
-        else:
-            nrows = M_prev.matrix.nrows()
         
-        for j in range(nrows):
+        for j in range(M_prev.nrows):
             _, sig_i = M_prev.sig[j]
             self.crit[sig_i].add(M_prev.row_lm(j))
         return
@@ -258,37 +139,10 @@ class BaseMac:
         """
         counter = 0
         lignes_0 = []
-        
-        if self.poly_ring.characteristic() == 2:
-            if hasattr(self, '_words_per_row') and self._words_per_row is not None:
-                # Working with packed matrix
-                nrows = self._nrows if hasattr(self, '_nrows') else len(self.matrix) // self._words_per_row
-                
-                for i in range(nrows):
-                    # Check if entire row is zero by checking all words
-                    row_is_zero = True
-                    for w in range(self._words_per_row):
-                        word = int(self.matrix[i * self._words_per_row + w])
-                        if word != 0:
-                            row_is_zero = False
-                            break
-                    
-                    if row_is_zero:
-                        counter += 1
-                        lignes_0.append(i)
-            else:
-                # Fallback for unpacked matrix
-                ncols = len(self.monomial_hash_list)
-                nrows = len(self.matrix) // ncols
-                for i in range(nrows):
-                    if not np.any(self.matrix[i * ncols : (i + 1) * ncols]):
-                        counter += 1
-                        lignes_0.append(i)
-        else:
-            for i in range(self.matrix.nrows()):
-                if self.matrix.nonzero_positions_in_row(i) == []:
-                    counter += 1
-                    lignes_0.append(i)
+        for i in range(self.nrows):
+            if np.all(self.matrix[i] == 0):
+                counter += 1
+                lignes_0.append(i)
         return counter, lignes_0
 
     def gauss(self, debug=True):
@@ -296,21 +150,13 @@ class BaseMac:
         Simple Gauss sans pivot et sans backtracking avec l'élimination
         Now works directly with packed matrices for GF(2)
         """
-        t0 = time.time()
-        
-        if self.poly_ring.characteristic() == 2:
-            nrows = self._nrows if hasattr(self, '_nrows') else self._current_row
-            ncols = self._ncols
-
-            gauss_gf2.gaussian_elim(self.matrix, nrows, self._words_per_row)
+        if self.is_char2:
+            packed, words_per_row = gauss_gf2.pack_matrix(self.matrix)
+            gauss_gf2.gaussian_elim(packed, self.nrows, words_per_row)
+            self.matrix = gauss_gf2.unpack_matrix(packed, self.nrows, self.ncols)
         else:
             # Original logic for non-GF(2)
             self.matrix.echelonize()
- 
-        t1 = time.time()
-        nrows = self._nrows if hasattr(self, '_nrows') else (self.matrix.nrows() if hasattr(self.matrix, 'nrows') else self._current_row)
-        ncols = self._ncols if hasattr(self, '_ncols') else (self.matrix.ncols() if hasattr(self.matrix, 'ncols') else len(self.monomial_hash_list))
-        print(f"[TIMER] Temps pour Gauss (matrice {nrows}x{ncols}) : {t1 - t0:.4f} s")
 
     def corank(self):
         """
@@ -319,24 +165,21 @@ class BaseMac:
         """
         nnz_columns = 0
         nnz_rows = 0
-
-        ncols = len(self.monomial_hash_list)
-        nrows = len(self.matrix) // ncols
         
         #for i in range(self.matrix.ncols()):
         #    if self.matrix.nonzero_positions_in_column(i) != []:
         #        nnz_columns += 1
 
         empty_row = True
-        for i in range(nrows):
-            for k in range(ncols):
-                if self.matrix[i * ncols + k]:
+        for i in range(self.nrows):
+            for k in range(self.ncols):
+                if self.matrix[i * self.ncols + k]:
                     empty_row = False
                     break
             if empty_row:
                 nnz_rows += 1
 
-        return ncols - nnz_rows
+        return self.ncols - nnz_rows
 
 def update_gb(gb, Md, Mtilde):
     if Md.matrix.nrows() != Mtilde.matrix.nrows():

@@ -9,6 +9,26 @@ def number_of_monomials_bidegree(nx, ny, d1, d2):
     x = binomial(nx + d1 - 1, d1)
     return x*y
 
+def complexity_bi(nx, ny, d, omega):
+    degs = integer_vectors_at_most(d)
+    degs.pop(0)
+    c = 0
+    for (d1, d2) in degs:
+        c += number_of_monomials_bidegree(nx, ny, d1, d2) ^ omega
+    return c
+
+def complexity_homo(nx, ny, d, omega):
+    c = binomial(nx + ny + d - 1, d) ^ omega
+    return c
+
+def integer_vectors_at_most(max_sum):
+    """Génère tous les vecteurs d'entiers de longueur donnée avec somme ≤ max_sum"""
+    result = []
+    for s in range(max_sum + 1):
+        for v in IntegerVectors(s, 2):
+            result.append(v)
+    return result
+
 def verif_antisym(A):
     m = A.nrows()
     n = A.ncols()
@@ -22,7 +42,7 @@ def verif_antisym(A):
     return True
 
 class MacBiHom(BaseMac):
-    def __init__(self, d1, d2, F, nx, ny, m):
+    def __init__(self, d1, d2, F, nx, ny, h):
         self.d = (d1, d2)
         self.nx = nx
         self.ny = ny
@@ -32,7 +52,7 @@ class MacBiHom(BaseMac):
         self.poly_ring = PolynomialRing(F, monomials_str, order='degrevlex')
         self.variables = [self.poly_ring(mon) for mon in monomials_str]
         self.monomial_ordered_list_deg_d((d1, d2))
-        super().__init__(F, monomials_str, estimated_total_size=max(nx, ny) * m)
+        super().__init__(F, monomials_str, h)
 
     def monomial_ordered_list_deg_d(self, d):
         """
@@ -120,14 +140,6 @@ class MacBiHom(BaseMac):
                         self.add_line(f_i, i, u)
         return
 
-def integer_vectors_at_most(max_sum):
-    """Génère tous les vecteurs d'entiers de longueur donnée avec somme ≤ max_sum"""
-    result = []
-    for s in range(max_sum + 1):
-        for v in IntegerVectors(s, 2):
-            result.append(v)
-    return result
-
 def F5Matrix(F, dmax, nx, ny):
     """
     F is homogeneous polynomials ordered such that deg(f_i) < deg(f_j) forall i, j
@@ -152,17 +164,18 @@ def F5Matrix(F, dmax, nx, ny):
     print(f"F5 bihomogeneous for d={F[0].total_degree()}...{dmax}")
 
     for (d1, d2) in degs:
+        try: 
+            h = bi_hilbert[ETuple([d1, d2])]
+        except KeyError:
+            h = 0
         print(f"\n{'-' * 20} d=({d1}, {d2}) {'-' * 20}\n")
         t_deg_start = time.time()
-        Mac_d = MacBiHom(d1, d2, R, nx, ny, m)
+        Mac_d = MacBiHom(d1, d2, R, nx, ny, h)
         #Mac_d.monomial_ordered_list_deg_d(d1 + d2)
         Mac_d_1 = None
         t0 = time.time()
         if (d1 == 0 and d2 != 0) or (d2 == 0 and d1 != 0):
-            try:
-                print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)} ----- Value in Hilbert Biseries: {bi_hilbert[ETuple([d1, d2])]}")
-            except KeyError:
-                continue
+            print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)} ----- Value in Hilbert Biseries: {h}")
             continue
         elif d1+d2 != 2:
             for M in Mac_d_old:
@@ -170,11 +183,13 @@ def F5Matrix(F, dmax, nx, ny):
                     Mac_d_1 = M
                     break
         if d1 + d2 > 3:
-            if Mac_d_old[-1].d[0] + Mac_d_old[-1].d[0] == d1 + d2:
+            if Mac_d_old[-1].d[0] + Mac_d_old[-1].d[1] == d1 + d2:
+                print("Je réutilise crit")
                 Mac_d.crit = Mac_d_old[-1].crit
             else:
                 for M in Mac_d_old:
                     if M.d[0] + M.d[1] == d1 + d2 - 2:
+                        print(f"Added Mac_{M.d[0]}_{M.d[1]}")
                         Mac_d.F5_criterion(M)
         for i in range(0, m):
             f_i = F[i]
@@ -186,16 +201,15 @@ def F5Matrix(F, dmax, nx, ny):
         print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
         #tmp_Mac = copy.deepcopy(Mac_d)
         #Mac_d.matrix = matrix(GF(2), Mac_d.matrix, sparse=False)
-        Mac_d.finalize_matrix()
+        print(f"Final matrix before gaussian elimination: {Mac_d.nrows}x{Mac_d.ncols}")
+        t0 = time.time()
         Mac_d.gauss()
+        t1 = time.time()
+        print(f"[TIMER] Temps pour Gauss (matrice {Mac_d.nrows}x{Mac_d.ncols}) : {t1 - t0:.4f} s")
         reductions_to_zero, lignes_a_0 = Mac_d.verify_reductions_zero()
-        nrows = Mac_d._nrows if hasattr(Mac_d, '_nrows') else Mac_d._current_row
-        ncols = Mac_d._ncols
-        print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {nrows}")
-        try:
-            print(f"Corank of degree ({d1}, {d2}): {ncols - nrows + reductions_to_zero} ----- Value in Hilbert Biseries: {bi_hilbert[ETuple([d1, d2])]}")
-        except KeyError:
-            print(f"Corank of degree ({d1}, {d2}): {ncols - nrows + reductions_to_zero} ----- Value in Hilbert Biseries: 0")
+        print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.nrows}")
+        print(f"Total non zero lines in: {Mac_d.nrows - reductions_to_zero} expected: {h + Mac_d.ncols}")
+        print(f"Corank of degree ({d1}, {d2}): {Mac_d.ncols - Mac_d.nrows + reductions_to_zero} ----- Value in Hilbert Biseries: {h}")
         #update_gb(gb, tmp_Mac, Mac_d)
         #if reductions_to_zero > 0:
         #    for i in lignes_a_0:
@@ -227,7 +241,7 @@ def hilbert_biseries(nx, ny, m):
             sum_l += term * bracket
         return sum_l
     
-    R.<tx,ty> = PowerSeriesRing(ZZ, default_prec=max(nx, ny) +2)
+    R.<tx,ty> = PowerSeriesRing(ZZ, default_prec=max(nx, ny) + 5)
     denom = ((1 - tx)^(nx)) * ((1 - ty)^(ny))
     num = (1 - tx*ty)^m + Nm(ny, m, tx, ty) + Nm(nx, m, ty, tx)
     return num / denom
@@ -238,7 +252,6 @@ if __name__ == '__main__':
     for i in test:
         print(i)
     """
-    F = homogenized_ideal(doit_bilinear(10, 10, 20))
     """
     R.<x1, x2, x3, y1, y2, y3, y4> = PolynomialRing(GF(7), order='degrevlex')
     F = [x1*y1 + 5*x2*y1 + 4*x3*y1 + 5*x1*y2 + 3*x2*y2 + x1*y3 + 4*x2*y3 + 5*x3*y3 + 5*x1*y4 + x2*y4 + 2*x3*y4,
@@ -248,17 +261,32 @@ if __name__ == '__main__':
     6*x1*y1 + 3*x2*y1 + 6*x3*y1 + 3*x1*y2 + 5*x3*y2 + 2*x1*y3 + 4*x2*y3 + 5*x3*y3 + 2*x1*y4 + 4*x2*y4 + 5*x3*y4
     ]
     """
-    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_14_15.sobj"))
-    #D = Ideal(F).degree_of_semi_regularity()
-    print(f"---------------Generating Serie Bardet: {generating_bardet_series(F)}\n\n")
-    #series_ring.<z> = PowerSeriesRing(ZZ)
-    #hilbert_series = series_ring(Ideal(F).hilbert_series())
-    #print(f"---------------Hilbert Series: {hilbert_series}\n\n")
+    nx = 6
+    ny = 6
+    m = 13
 
-    nx = 10
-    ny = 10
+    F = doit_bilinear(nx, ny, m)
+    print(F)
+    F = homogenized_ideal(F)
+
+    #F = homogenized_ideal(load(f"../MPCitH_SBC/system/sage/system_bilin_{nx + ny}_{2*(nx + ny) + 1}.sobj"))
+    #D = Ideal(F).degree_of_semi_regularity()
+    #print(f"---------------Generating Serie Bardet: {generating_bardet_series(F)}\n\n")
+    series_ring.<z> = PowerSeriesRing(ZZ)
+    hilbert_series = series_ring(Ideal(F).hilbert_series())
+    print(f"---------------Hilbert Series: {hilbert_series}\n\n")#
+
+    
     #print(f"---------------degree of semi-regularity of F: {D}\n\n")
     print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(nx, ny, len(F))}\n\n")
 
-    #F5Matrix(F, 2, nx, ny)
-    cProfile.run("F5Matrix(F, min(nx, ny) + 2, nx, ny)", sort='cumtime')
+    F5Matrix(F, min(nx, ny) + 2, nx, ny)
+    #cProfile.run("F5Matrix(F, min(nx, ny) + 2, nx, ny)", sort='cumtime')
+
+    """
+    for nx in range(12, 16):
+        F = homogenized_ideal(load(f"../MPCitH_SBC/system/sage/system_bilin_{nx * 2}_{nx * 2 + 1}.sobj"))
+        ny = nx
+        print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(nx, ny, len(F))}\n\n")
+        F5Matrix(F, nx - 5, nx, ny)
+    """

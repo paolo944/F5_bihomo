@@ -182,6 +182,7 @@ def F5Matrix(F, dmax, nx, ny):
                 if M.d == (d1 - 1, d2) or M.d == (d1, d2 - 1):
                     Mac_d_1 = M
                     break
+        """
         if d1 + d2 > 3:
             if Mac_d_old[-1].d[0] + Mac_d_old[-1].d[1] == d1 + d2:
                 print("Je réutilise crit")
@@ -191,6 +192,7 @@ def F5Matrix(F, dmax, nx, ny):
                     if M.d[0] + M.d[1] == d1 + d2 - 2:
                         print(f"Added Mac_{M.d[0]}_{M.d[1]}")
                         Mac_d.F5_criterion(M)
+        """
         for i in range(0, m):
             f_i = F[i]
             if d1 + d2 == 2:
@@ -261,27 +263,36 @@ if __name__ == '__main__':
     6*x1*y1 + 3*x2*y1 + 6*x3*y1 + 3*x1*y2 + 5*x3*y2 + 2*x1*y3 + 4*x2*y3 + 5*x3*y3 + 2*x1*y4 + 4*x2*y4 + 5*x3*y4
     ]
     """
-    nx = 6
-    ny = 6
-    m = 13
+    nx = 12
+    ny = nx
+    m = 2*(nx + ny) + 1
 
-    F = doit_bilinear(nx, ny, m)
-    print(F)
-    F = homogenized_ideal(F)
+    #F = doit_bilinear(nx, ny, m)
+    #print(F)
+    #F = homogenized_ideal(F)
 
-    #F = homogenized_ideal(load(f"../MPCitH_SBC/system/sage/system_bilin_{nx + ny}_{2*(nx + ny) + 1}.sobj"))
+    print(f"../MPCitH_SBC/system/sage/system_bilin_{nx + ny}_{m}.sobj")
+    F = homogenized_ideal(load(f"../MPCitH_SBC/system/sage/system_bilin_{nx + ny}_{m}.sobj"))
     #D = Ideal(F).degree_of_semi_regularity()
     #print(f"---------------Generating Serie Bardet: {generating_bardet_series(F)}\n\n")
-    series_ring.<z> = PowerSeriesRing(ZZ)
-    hilbert_series = series_ring(Ideal(F).hilbert_series())
-    print(f"---------------Hilbert Series: {hilbert_series}\n\n")#
+    #series_ring.<z> = PowerSeriesRing(ZZ)
+    #hilbert_series = series_ring(Ideal(F).hilbert_series())
+    #print(f"---------------Hilbert Series: {hilbert_series}\n\n")#
 
     
     #print(f"---------------degree of semi-regularity of F: {D}\n\n")
     print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(nx, ny, len(F))}\n\n")
 
-    F5Matrix(F, min(nx, ny) + 2, nx, ny)
+    #F5Matrix(F, min(nx, ny) - 3, nx, ny)
     #cProfile.run("F5Matrix(F, min(nx, ny) + 2, nx, ny)", sort='cumtime')
+
+    G = Ideal(F).groebner_basis(algorithm="msolve")
+    deg_max = 0
+    for p in G:
+        d = p.total_degree()
+        if d > deg_max:
+            deg_max = d
+    print(deg_max)
 
     """
     for nx in range(12, 16):

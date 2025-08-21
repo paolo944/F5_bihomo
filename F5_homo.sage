@@ -109,7 +109,6 @@ def F5Matrix(F, dmax):
                 Mac_d.add_lines(f_i, i, Mac_d_1)
         t1 = time.time()
         print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
-        print(Mac_d.matrix)
         #tmp_Mac = copy.deepcopy(Mac_d)
         t0 = time.time()
         Mac_d.gauss(debug=True)
@@ -119,7 +118,6 @@ def F5Matrix(F, dmax):
         reductions_to_zero, lignes_0 = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree {d} with normal Gauss: {reductions_to_zero} / {Mac_d.nrows}")
         print(f"Corank of degree {d}: {Mac_d.ncols- Mac_d.nrows + reductions_to_zero} ----- Value in Hilbert Series: {hilbert_series[d]}")
-        print(Mac_d.matrix)
 
         if reductions_to_zero > 0:
             for i in lignes_0:
@@ -155,11 +153,6 @@ def F5Matrix(F, dmax):
     return gb
 
 if __name__ == '__main__':
-    #F = homogenized_ideal(doit(4, 5))
-    #save(F, "test.sobj")
-    #F = load("test.sobj")
-    #for f in F:
-    #    print(f)
     """
     R.<x1, x2, x3> = PolynomialRing(GF(5), order='degrevlex')
     F = [x2^2 + 4*x2*x3,
@@ -167,18 +160,27 @@ if __name__ == '__main__':
     3*x1^2 + 4*x1*x2 + 2*x2^2]
     """
     
-    #F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_18_19.sobj"))
-    F = homogenized_ideal(doit_bilinear(4, 4, 5))
+    F = homogenized_ideal(load("../MPCitH_SBC/system/sage/system_bilin_16_17.sobj"))
+    #F = homogenized_ideal(doit_bilinear(4, 4, 5))
+    #F = homogenized_ideal(doit(10, 11))
     #series_ring.<z> = PowerSeriesRing(ZZ)
     #hilbert_series = series_ring(Ideal(F).hilbert_series())
     #print(f"Hilbert Series: {hilbert_series}")
-    D = Ideal(F).degree_of_semi_regularity()
-    print(generating_bardet_series(F))
-    print(f"degree of semi-regularity of F: {D}")
+    #D = Ideal(F).degree_of_semi_regularity()
+    #print(generating_bardet_series(F))
+    #print(f"degree of semi-regularity of F: {D}")
 
     F = sorted(F, key=lambda f: f.degree())
-    F5Matrix(F, 3)
+    F5Matrix(F, 5)
     #cProfile.run("F5Matrix(F, D)", sort='cumtime')
+
+    G = Ideal(F).groebner_basis(algorithm="msolve")
+    deg_max = 0
+    for p in G:
+        d = p.total_degree()
+        if d > deg_max:
+            deg_max = d
+    print(deg_max)
 
     """
     print(len(gb))

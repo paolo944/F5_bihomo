@@ -1,1 +1,2 @@
 sage -python setup.py build_ext --inplace
+rm -rf build gauss_gf2.c pack_utils.c *.so

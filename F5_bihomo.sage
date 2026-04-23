@@ -100,7 +100,7 @@ class MacBiHom(BaseMac):
             return monomial
         exp = monomial.exponents()[0][:self.nx]
         for i, k in enumerate(exp):
-            if k == 1:
+            if k >= 1:
                 return self.variables[i]
 
     def biggest_y(self, monomial):
@@ -108,10 +108,10 @@ class MacBiHom(BaseMac):
             return monomial
         exp = monomial.exponents()[0][self.ny:]
         for i, k in enumerate(exp):
-            if k == 1:
+            if k >= 1:
                 return self.variables[self.ny + i]
 
-    def add_lines(self, f_i, i, Mac_d_1, Mac_d_2):
+    def add_lines(self, f_i, i, Mac_d_1):
         """
         Adds all the lines of signature (u, f_i)
         s.t. deg(uf_i) == d
@@ -122,22 +122,31 @@ class MacBiHom(BaseMac):
         elif Mac_d_1.d == (self.d[0], self.d[1] - 1):
             degree_to_add = 1
             variables = self.variables[self.nx:self.nx+self.ny]
-
+        
         for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
             if f_ii < i:
                 continue
             elif f_ii > i:
                 return
-            
+
             x_lambda = (
             self.biggest_x(e) if degree_to_add == 0 else self.biggest_y(e)
             )
+            if x_lambda == None:
+                print(e)
+                print(x_lambda)
+                print(e.exponents()[0][:self.nx])
+            # if self.d[0] + self.d[1] > 3:
+                # for x_i in variables:
+                    # u = x_i * e
+                    # if not any(u in self.crit[ii] for ii in range(i)):
+                        # self.add_line(f_i, i, u)            self.biggest_x(e) if degree_to_add == 0 else self.biggest_y(e)            )
+            if x_lambda != 1:
+                variables[variables.index(x_lambda):]
 
             for x_i in variables:
-                if x_i >= x_lambda:
-                    u = x_i * e
-                    if not any(u in self.crit[ii] for ii in range(i)):
-                        self.add_line(f_i, i, u)
+                u = x_i * e
+                self.add_line(f_i, i, u)
         return
 
 def F5Matrix(F, dmax, nx, ny):
@@ -158,8 +167,10 @@ def F5Matrix(F, dmax, nx, ny):
     gb = []
     bi_hilbert = hilbert_biseries(nx, ny, len(F)).monomial_coefficients()
     
-    degs = integer_vectors_at_most(dmax)
-    degs.pop(0)
+    #degs = integer_vectors_at_most(dmax)
+    #degs.pop(0)
+
+    degs = [(d, 1) for d in range(dmax)]
 
     print(f"F5 bihomogeneous for d={F[0].total_degree()}...{dmax}")
 
@@ -177,28 +188,28 @@ def F5Matrix(F, dmax, nx, ny):
         if (d1 == 0 and d2 != 0) or (d2 == 0 and d1 != 0):
             print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)} ----- Value in Hilbert Biseries: {h}")
             continue
-        elif d1+d2 != 2:
-            for M in Mac_d_old:
+        elif d1+d2 > 2:
+            for M in Mac_d_old[::-1]:
                 if M.d == (d1 - 1, d2) or M.d == (d1, d2 - 1):
                     Mac_d_1 = M
                     break
-        """
-        if d1 + d2 > 3:
-            if Mac_d_old[-1].d[0] + Mac_d_old[-1].d[1] == d1 + d2:
-                print("Je réutilise crit")
-                Mac_d.crit = Mac_d_old[-1].crit
-            else:
-                for M in Mac_d_old:
-                    if M.d[0] + M.d[1] == d1 + d2 - 2:
-                        print(f"Added Mac_{M.d[0]}_{M.d[1]}")
-                        Mac_d.F5_criterion(M)
-        """
+        
+        # if d1 + d2 > 3:
+            # if Mac_d_old[-1].d[0] + Mac_d_old[-1].d[1] == d1 + d2:
+                # print("Je réutilise crit")
+                # Mac_d.crit = Mac_d_old[-1].crit
+            # else:
+                # for M in Mac_d_old:
+                    # if M.d[0] == d1 - 1 and M.d[1] == d2 - 1:
+                        # print(f"Added Mac_{M.d[0]}_{M.d[1]}")
+                        # Mac_d.F5_criterion(M)
+        
         for i in range(0, m):
             f_i = F[i]
             if d1 + d2 == 2:
                 Mac_d.add_line(f_i, i, 1)
             else:
-                Mac_d.add_lines(f_i, i, Mac_d_1, Mac_d_old)
+                Mac_d.add_lines(f_i, i, Mac_d_1)
         t1 = time.time()
         print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
         #tmp_Mac = copy.deepcopy(Mac_d)
@@ -210,7 +221,7 @@ def F5Matrix(F, dmax, nx, ny):
         print(f"[TIMER] Temps pour Gauss (matrice {Mac_d.nrows}x{Mac_d.ncols}) : {t1 - t0:.4f} s")
         reductions_to_zero, lignes_a_0 = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.nrows}")
-        print(f"Total non zero lines in: {Mac_d.nrows - reductions_to_zero} expected: {h + Mac_d.ncols}")
+        print(f"Total non zero lines in: {Mac_d.nrows - reductions_to_zero} expected: {Mac_d.ncols - h}")
         print(f"Corank of degree ({d1}, {d2}): {Mac_d.ncols - Mac_d.nrows + reductions_to_zero} ----- Value in Hilbert Biseries: {h}")
         #update_gb(gb, tmp_Mac, Mac_d)
         #if reductions_to_zero > 0:
@@ -263,36 +274,35 @@ if __name__ == '__main__':
     6*x1*y1 + 3*x2*y1 + 6*x3*y1 + 3*x1*y2 + 5*x3*y2 + 2*x1*y3 + 4*x2*y3 + 5*x3*y3 + 2*x1*y4 + 4*x2*y4 + 5*x3*y4
     ]
     """
-    nx = 12
+    nx = 8
     ny = nx
-    m = 2*(nx + ny) + 1
+    m = (nx + ny) + 1
 
-    #F = doit_bilinear(nx, ny, m)
+    F = homogenized_ideal(doit_bilinear(nx, ny, m))
     #print(F)
-    #F = homogenized_ideal(F)
 
-    print(f"../MPCitH_SBC/system/sage/system_bilin_{nx + ny}_{m}.sobj")
-    F = homogenized_ideal(load(f"../MPCitH_SBC/system/sage/system_bilin_{nx + ny}_{m}.sobj"))
-    #D = Ideal(F).degree_of_semi_regularity()
+    #print(f"../MPCitH_SBC/system/sage/system_bilin_{nx + ny}_{m}.sobj")
+    #F = homogenized_ideal(load(f"../MPCitH_SBC/system/sage/system_bilin_{nx + ny}_{m}.sobj"))
+    D = Ideal(F).degree_of_semi_regularity()
     #print(f"---------------Generating Serie Bardet: {generating_bardet_series(F)}\n\n")
     #series_ring.<z> = PowerSeriesRing(ZZ)
     #hilbert_series = series_ring(Ideal(F).hilbert_series())
     #print(f"---------------Hilbert Series: {hilbert_series}\n\n")#
 
     
-    #print(f"---------------degree of semi-regularity of F: {D}\n\n")
+    print(f"---------------degree of semi-regularity of F: {D}\n\n")
     print(f"---------------Série génératrice bilinéaire: {hilbert_biseries(nx, ny, len(F))}\n\n")
 
-    #F5Matrix(F, min(nx, ny) - 3, nx, ny)
+    F5Matrix(F, min(nx, ny) + 1, nx, ny)
     #cProfile.run("F5Matrix(F, min(nx, ny) + 2, nx, ny)", sort='cumtime')
 
-    G = Ideal(F).groebner_basis(algorithm="msolve")
-    deg_max = 0
-    for p in G:
-        d = p.total_degree()
-        if d > deg_max:
-            deg_max = d
-    print(deg_max)
+    #G = Ideal(F).groebner_basis(algorithm="msolve")
+    #deg_max = 0
+    #for p in G:
+    #    d = p.total_degree()
+    #    if d > deg_max:
+    #        deg_max = d
+    #print(deg_max)
 
     """
     for nx in range(12, 16):

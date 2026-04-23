@@ -47,7 +47,7 @@ class BaseMac:
         self.n = len(self.monomial_hash_list)
         self.is_char2 = (self.poly_ring.characteristic() == 2)
         self.ncols = len(self.monomial_inverse_search)
-        self.nrows = self.ncols - h
+        self.nrows = (self.ncols - h)
 
         self.matrix = np.zeros((self.nrows, self.ncols), dtype=bool) # The Macaulay matrix
         self.matrix_index = 0
@@ -121,13 +121,12 @@ class BaseMac:
 
     def F5_criterion(self, M_prev):
         """
-        F5 criterion: returns True if row with signature (u, f_i) 
-        will reduce to 0
+        F5 criterion: constructs the set of all the LM of M_prev
         """
         if M_prev is None:
             return
         
-        for j in range(M_prev.nrows):
+        for j in range(M_prev.matrix_index):
             _, sig_i = M_prev.sig[j]
             self.crit[sig_i].add(M_prev.row_lm(j))
         return

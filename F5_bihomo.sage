@@ -100,7 +100,7 @@ class MacBiHom(BaseMac):
             return monomial
         exp = monomial.exponents()[0][:self.nx]
         for i, k in enumerate(exp):
-            if k >= 1:
+            if k > 0:
                 return self.variables[i]
 
     def biggest_y(self, monomial):
@@ -108,46 +108,85 @@ class MacBiHom(BaseMac):
             return monomial
         exp = monomial.exponents()[0][self.ny:]
         for i, k in enumerate(exp):
-            if k >= 1:
+            if k > 0:
                 return self.variables[self.ny + i]
 
-    def add_lines(self, f_i, i, Mac_d_1):
+    # def add_lines(self, f_i, i, Mac_d_1):
+    #     """
+    #     Adds all the lines of signature (u, f_i)
+    #     s.t. deg(uf_i) == d
+    #     """
+    #     if Mac_d_1.d == (self.d[0] - 1, self.d[1]):
+    #         degree_to_add = 0
+    #         base_variables = self.variables[:self.nx]
+    #     elif Mac_d_1.d == (self.d[0], self.d[1] - 1):
+    #         degree_to_add = 1
+    #         base_variables = self.variables[self.nx:self.nx+self.ny]
+        
+    #     for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
+    #         if f_ii < i:
+    #             continue
+    #         elif f_ii > i:
+    #             return
+
+    #         x_lambda = (
+    #         self.biggest_x(e) if degree_to_add == 0 else self.biggest_y(e)
+    #         )
+
+    #         current_vars = base_variables
+    #         if x_lambda != 1:
+    #             try:
+    #                 idx = base_variables.index(x_lambda)
+    #                 current_vars = base_variables[idx:]
+    #             except ValueError:
+    #                 # Au cas où x_lambda n'est pas dans la liste
+    #                 current_vars = base_variables
+
+    #         # if self.d[0] + self.d[1] > 3:
+    #         #     for x_i in variables:
+    #         #         u = x_i * e
+    #         #         if not any(u in self.crit[ii] for ii in range(i)):
+    #         #             self.add_line(f_i, i, u)
+    #         # else:
+
+    #         for x_i in current_vars:
+    #             u = x_i * e
+    #             self.add_line(f_i, i, u)
+    #     return
+
+    def add_lines(self, f_i, i):
         """
         Adds all the lines of signature (u, f_i)
-        s.t. deg(uf_i) == d
+        s.t. deg(uf_i) == d.
+        Optimised version: generates multipliers directly since the F5 criterion is ignored.
         """
-        if Mac_d_1.d == (self.d[0] - 1, self.d[1]):
-            degree_to_add = 0
-            variables = self.variables[:self.nx]
-        elif Mac_d_1.d == (self.d[0], self.d[1] - 1):
-            degree_to_add = 1
-            variables = self.variables[self.nx:self.nx+self.ny]
         
-        for row_i, (e, f_ii) in enumerate(Mac_d_1.sig):
-            if f_ii < i:
-                continue
-            elif f_ii > i:
-                return
-
-            x_lambda = (
-            self.biggest_x(e) if degree_to_add == 0 else self.biggest_y(e)
-            )
-            if x_lambda == None:
-                print(e)
-                print(x_lambda)
-                print(e.exponents()[0][:self.nx])
-            # if self.d[0] + self.d[1] > 3:
-                # for x_i in variables:
-                    # u = x_i * e
-                    # if not any(u in self.crit[ii] for ii in range(i)):
-                        # self.add_line(f_i, i, u)            self.biggest_x(e) if degree_to_add == 0 else self.biggest_y(e)            )
-            if x_lambda != 1:
-                variables[variables.index(x_lambda):]
-
-            for x_i in variables:
-                u = x_i * e
-                self.add_line(f_i, i, u)
-        return
+        # 2. On calcule le bidegré requis pour le multiplicateur u
+        deg_u_x = self.d[0] - 1
+        deg_u_y = self.d[1] - 1
+        
+        # Si le bidegré requis est négatif, f_i ne peut pas contribuer à ce degré
+        if deg_u_x < 0 or deg_u_y < 0:
+            return
+            
+        # 3. Générer de façon combinatoire tous les monômes de bidegré (deg_u_x, deg_u_y)
+        Lx = IntegerVectors(deg_u_x, self.nx)
+        Ly = IntegerVectors(deg_u_y, self.ny)
+        
+        monomials_u = []
+        for expx in Lx:
+            for expy in Ly:
+                # Concaténer les exposants X et Y
+                exponents = list(expx) + list(expy)
+                u = self.poly_ring.monomial(*exponents)
+                monomials_u.append(u)
+                
+        # 4. Trier par ordre décroissant (pour respecter l'ordre de traitement type degrevlex)
+        monomials_u.sort(reverse=True)
+        
+        # 5. Ajouter toutes les lignes à la matrice
+        for u in monomials_u:
+            self.add_line(f_i, i, u)
 
 def F5Matrix(F, dmax, nx, ny):
     """
@@ -183,52 +222,53 @@ def F5Matrix(F, dmax, nx, ny):
         t_deg_start = time.time()
         Mac_d = MacBiHom(d1, d2, R, nx, ny, h)
         #Mac_d.monomial_ordered_list_deg_d(d1 + d2)
-        Mac_d_1 = None
+        # Mac_d_1 = None
         t0 = time.time()
         if (d1 == 0 and d2 != 0) or (d2 == 0 and d1 != 0):
             print(f"Corank of degree ({d1}, {d2}): {len(Mac_d.monomial_inverse_search)} ----- Value in Hilbert Biseries: {h}")
             continue
-        elif d1+d2 > 2:
-            for M in Mac_d_old[::-1]:
-                if M.d == (d1 - 1, d2) or M.d == (d1, d2 - 1):
-                    Mac_d_1 = M
-                    break
+        # elif d1+d2 > 2:
+        #     for M in Mac_d_old[::-1]:
+        #         if M.d == (d1 - 1, d2) or M.d == (d1, d2 - 1):
+        #             Mac_d_1 = M
+        #             break
         
         # if d1 + d2 > 3:
-            # if Mac_d_old[-1].d[0] + Mac_d_old[-1].d[1] == d1 + d2:
-                # print("Je réutilise crit")
-                # Mac_d.crit = Mac_d_old[-1].crit
-            # else:
-                # for M in Mac_d_old:
-                    # if M.d[0] == d1 - 1 and M.d[1] == d2 - 1:
-                        # print(f"Added Mac_{M.d[0]}_{M.d[1]}")
-                        # Mac_d.F5_criterion(M)
+        #     if Mac_d_old[-1].d[0] + Mac_d_old[-1].d[1] == d1 + d2:
+        #         print("Je réutilise crit")
+        #         Mac_d.crit = Mac_d_old[-1].crit
+        #     else:
+        #         for M in Mac_d_old:
+        #             if M.d[0] + M.d[1] == d1 + d2 - 2:
+        #                 print(f"Added Mac_{M.d[0]}_{M.d[1]}")
+        #                 Mac_d.F5_criterion(M)
         
         for i in range(0, m):
             f_i = F[i]
             if d1 + d2 == 2:
                 Mac_d.add_line(f_i, i, 1)
             else:
-                Mac_d.add_lines(f_i, i, Mac_d_1)
+                Mac_d.add_lines(f_i, i)
         t1 = time.time()
         print(f"[TIMER] Temps pour add_lines : {t1 - t0:.4f} s")
         #tmp_Mac = copy.deepcopy(Mac_d)
         #Mac_d.matrix = matrix(GF(2), Mac_d.matrix, sparse=False)
         print(f"Final matrix before gaussian elimination: {Mac_d.nrows}x{Mac_d.ncols}")
+        print(f"Mais il y a en réalité {Mac_d.matrix_index} lignes")
         t0 = time.time()
         Mac_d.gauss()
         t1 = time.time()
         print(f"[TIMER] Temps pour Gauss (matrice {Mac_d.nrows}x{Mac_d.ncols}) : {t1 - t0:.4f} s")
         reductions_to_zero, lignes_a_0 = Mac_d.verify_reductions_zero()
         print(f"number of reductions to 0 in degree ({d1}, {d2}): {reductions_to_zero} / {Mac_d.nrows}")
-        print(f"Total non zero lines in: {Mac_d.nrows - reductions_to_zero} expected: {Mac_d.ncols - h}")
-        print(f"Corank of degree ({d1}, {d2}): {Mac_d.ncols - Mac_d.nrows + reductions_to_zero} ----- Value in Hilbert Biseries: {h}")
+        print(f"Total non zero lines in: {Mac_d.matrix_index - reductions_to_zero} expected: {Mac_d.ncols - h}")
+        print(f"Corank of degree ({d1}, {d2}): {Mac_d.ncols - Mac_d.matrix_index + reductions_to_zero} ----- Value in Hilbert Biseries: {h}")
         #update_gb(gb, tmp_Mac, Mac_d)
         #if reductions_to_zero > 0:
         #    for i in lignes_a_0:
         #        print(Mac_d.sig[i])
 
-        Mac_d_old.append(Mac_d)
+        # Mac_d_old.append(Mac_d)
 
         t_deg_end = time.time()
         print(f"[TIMER] Temps total pour bi-degré ({d1}, {d2}) : {t_deg_end - t_deg_start:.2f} s")

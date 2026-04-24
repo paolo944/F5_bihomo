@@ -138,7 +138,7 @@ class BaseMac:
         """
         counter = 0
         lignes_0 = []
-        for i in range(self.nrows):
+        for i in range(self.matrix_index):
             if np.all(self.matrix[i] == 0):
                 counter += 1
                 lignes_0.append(i)
@@ -151,8 +151,8 @@ class BaseMac:
         """
         if self.is_char2:
             packed, words_per_row = gauss_gf2.pack_matrix(self.matrix)
-            gauss_gf2.gaussian_elim(packed, self.nrows, words_per_row)
-            self.matrix = gauss_gf2.unpack_matrix(packed, self.nrows, self.ncols)
+            gauss_gf2.gaussian_elim(packed, self.matrix_index, words_per_row)
+            self.matrix = gauss_gf2.unpack_matrix(packed, self.matrix_index, self.ncols)
         else:
             # Original logic for non-GF(2)
             self.matrix.echelonize()
@@ -170,7 +170,7 @@ class BaseMac:
         #        nnz_columns += 1
 
         empty_row = True
-        for i in range(self.nrows):
+        for i in range(self.matrix_index):
             for k in range(self.ncols):
                 if self.matrix[i * self.ncols + k]:
                     empty_row = False

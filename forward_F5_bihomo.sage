@@ -1,10 +1,6 @@
 from sage.all import *
 import time
 
-###############################################################################
-# 1. GÉNÉRATION DU SYSTÈME (Anciennement base_F5.sage)
-###############################################################################
-
 def generate_bilinear_system(n_x, n_y, m):
     """
     Génère m polynômes bilinéaires homogènes de bi-degré (1,1)
@@ -35,6 +31,20 @@ def generate_bilinear_system(n_x, n_y, m):
 
     return R, polynomials
 
+def homogenized_ideal(system):
+    """
+    Returns the homogenized system that is supposed
+    quadratic
+    """
+    system2 = []
+    for i in system:
+        try:
+            system2.append(i.homogeneous_components()[2])
+        except KeyError:
+            system2.append(i.homogeneous_components()[1])
+
+    return system2
+
 def count_monomials_bidegree(n_vars, degree):
     """ Calcule (n+d-1) choose d """
     if degree < 0: return 0
@@ -60,7 +70,7 @@ def hilbert_biseries(nx, ny, m):
             sum_l += term * bracket
         return sum_l
     
-    R.<tx,ty> = PowerSeriesRing(ZZ, default_prec=max(nx, ny) + 5)
+    R.<tx,ty> = PowerSeriesRing(ZZ, default_prec=max(nx, ny) + 10)
     denom = ((1 - tx)^(nx)) * ((1 - ty)^(ny))
     num = (1 - tx*ty)^m + Nm(ny, m, tx, ty) + Nm(nx, m, ty, tx)
     return num / denom
@@ -78,12 +88,26 @@ def get_matrix_dimensions(F, nx, ny, target_d):
     
     h = bi_hilbert[ETuple([d1, d2])]
     nrows = int(ncols) - h
+    print(f"h: {h}, nrows: {nrows}")
             
     return nrows, int(ncols)
 
-###############################################################################
-# 3. ALGORITHME DE CALCUL (Structure F5 simplifiée)
-###############################################################################
+def get_matrix_stats(M):
+    nb_lignes_nz = M.rank()
+
+    cols_actives = set()
+    for i in range(nb_lignes_nz):
+        cols_actives.update(M[i].nonzero_positions())
+    
+    nb_cols_nz = len(cols_actives)
+
+    difference = nb_cols_nz - nb_lignes_nz
+
+    return {
+        "lignes_non_nulles": nb_lignes_nz,
+        "colonnes_non_nulles": nb_cols_nz,
+        "difference": difference
+    }
 
 def solve_bihomo_fast(R, F, dmax):
     nx = len([v for v in R.gens() if str(v).startswith('x')])
@@ -121,40 +145,94 @@ def solve_bihomo_fast(R, F, dmax):
             for coeff, monom in poly:
                 if monom in monom_to_idx:
                     # M[row, col] = val est efficace sur GF(2) dans Sage
-                    M[current_row, monom_to_idx[monom]] = coeff
+                    try:
+                        M[current_row, monom_to_idx[monom]] = coeff
+                    except IndexError:
+                        print(current_row)
+                        return
             current_row += 1
 
     # 4. Élimination de Gauss (M4RI automatique)
-    print(f"Lancement de M4RI...")
+    # print(f"Lancement de M4RI...")
     t_start = time.time()
+    print(f"density before rref {M.density(approx=True)}")
     M.echelonize()
     rank = M.rank()
     print(f"Rang: {rank} (Pleine: {rank == min(nrows, ncols)}) nblignes = {nrows} ncols = {ncols}")
     t_end = time.time()
     
     print(f"Terminé en {t_end - t_start:.4f}s")
-    return M
+    return M, rank == min(nrows, ncols)
 
-###############################################################################
-# EXÉCUTION
-###############################################################################
+
+def solve_bihomo_sparse(R, F, dmax):
+    nx = len([v for v in R.gens() if str(v).startswith('x')])
+    ny = len([v for v in R.gens() if str(v).startswith('y')])
+
+    nrows, ncols = get_matrix_dimensions(F, nx, ny, (dmax, 1))
+    if nrows == 0: 
+        return None, False
+    
+    Lx = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(dmax, nx)]
+    Ly = [R.monomial(*([0]*nx + list(v))) for v in IntegerVectors(1, ny)]
+    cols = sorted([mx * my for mx in Lx for my in Ly], reverse=True)
+    monom_to_idx = {m: i for i, m in enumerate(cols)}
+
+    entries = {}
+    current_row = 0
+    
+    Lx_u = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(dmax - 1, nx)]
+    
+    for f in F:
+        for u in Lx_u:
+            poly = u * f
+            for coeff, monom in poly:
+                if monom in monom_to_idx:
+                    entries[(current_row, monom_to_idx[monom])] = 1
+            current_row += 1
+
+    M = matrix(GF(2), nrows, ncols, entries, sparse=True)
+
+    t_start = time.time()
+    
+    density = M.density()
+    print(f"Densité avant calcul du rang : {float(density):.6f}")
+    
+    rank = M.rank() 
+    
+    t_end = time.time()
+    print(f"Terminé en {t_end - t_start:.4f}s")
+    
+    return M, rank == min(nrows, ncols)
 
 if __name__ == "__main__":
     from sage.rings.polynomial.polydict import ETuple    
     
-    NX, NY, M = 9, 9, 19
+    NX = 7
+    NY = NX
+    M = NY + NX - 2
     R, F = generate_bilinear_system(NX, NY, M)
-    
-    bi_hilbert = hilbert_biseries(NX, NY, M).monomial_coefficients()
+    F = homogenized_ideal(F)
+    # F = homogenized_ideal(load(f"../MPCitH_SBC/system/sage/system_bilin_{NX + NY}_{M}.sobj"))
+    # print(f"SBC Nx = Ny = {NX} M = {M}")
+    # R = F[0].parent()
+    bi_hilbert = hilbert_biseries(NX, NY, M)
+    print(bi_hilbert)
+    bi_hilbert = bi_hilbert.monomial_coefficients()
     dmax = 0
-    for i in range(NX + 2):
+    for i in range(NX + NY):
         if bi_hilbert[ETuple([i, 1])] <= 0:
             dmax = i
             break
 
     print(f"dmax = {dmax}")
 
-    print(f"Système généré: {M} équations, {NX} variables x, {NY} variables y")
+    # print(f"Système généré: {M} équations, {NX} variables x, {NY} variables y")
     
     # On teste sur quelques bidegrés
-    solve_bihomo_fast(R, F, dmax)
+    for i in range(2, 10):
+        print(f"d = {i}")
+        M, rank = solve_bihomo_fast(R, F, i)
+        if not rank:
+            print(f"dreg = {i}, density = {M.density(approx=True)}")
+            break

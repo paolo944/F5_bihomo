@@ -1,6 +1,7 @@
 import time
 import os
 import psutil
+import cProfile
 
 p = 2
 
@@ -124,6 +125,32 @@ def get_matrix_stats(M):
         "difference": difference
     }
 
+def timing_rank(M):
+    return M.rank('m4ri')
+
+def construct_matrix(M, multipliers, monom_to_idx):
+    current_row = 0
+    for u in multipliers:
+        for f in F:
+            poly = u * f
+            for coeff, monom in poly:
+                try:
+                    M[current_row, monom_to_idx[monom]] = coeff
+                except IndexError:
+                    print(current_row)
+                    return
+            current_row += 1
+
+def generate_monomials(R, nx, ny, dx, dy):
+    Lx = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(dx, nx)]
+    Ly = [R.monomial(*([0]*nx + list(v))) for v in IntegerVectors(dy, ny)]
+    cols = sorted([mx * my for mx in Lx for my in Ly], reverse=True)
+    monom_to_idx = {m: i for i, m in enumerate(cols)}
+    return monom_to_idx
+
+def get_multipliers(R, dmax, nx, ny):
+    return [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(dmax - 1, nx)]
+
 def solve_bihomo_fast(R, F, dmax):
     nx = len([v for v in R.gens() if str(v).startswith('x')])
     ny = len([v for v in R.gens() if str(v).startswith('y')])
@@ -136,38 +163,15 @@ def solve_bihomo_fast(R, F, dmax):
     # On crée la matrice directement en mémoire GF(2)
     M = matrix(R.base_ring(), nrows, ncols)
 
-    # 2. Génération des monômes de colonnes (Triés pour l'ordre)
-    Lx = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(dmax, nx)]
-    Ly = [R.monomial(*([0]*nx + list(v))) for v in IntegerVectors(1, ny)]
-    cols = sorted([mx * my for mx in Lx for my in Ly], reverse=True)
-    monom_to_idx = {m: i for i, m in enumerate(cols)}
-        
-    # Multiplicateurs u
-    # Lx_u = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(du_x, nx)]
-    # Ly_u = [R.monomial(*([0]*nx + list(v))) for v in IntegerVectors(du_y, ny)]
-    # multipliers = [mx * my for mx in Lx_u for my in Ly_u]
+    monom_to_idx = generate_monomials(R, nx, ny, dmax, 1)
     
-    multipliers = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(dmax - 1, nx)]
+    multipliers = get_multipliers(R, dmax, nx, ny)
 
-    # 3. Remplissage direct de la matrice
-    current_row = 0
-    for u in multipliers:
-        for f in F:
-            poly = u * f
-            # Optimisation : on remplit la ligne i de la matrice M
-            for coeff, monom in poly:
-                if monom in monom_to_idx:
-                    # M[row, col] = val est efficace sur GF(2) dans Sage
-                    try:
-                        M[current_row, monom_to_idx[monom]] = coeff
-                    except IndexError:
-                        print(current_row)
-                        return
-            current_row += 1
+    construct_matrix(M, multipliers, monom_to_idx)
 
     #####Ecriture format pour SPASM#####
-    A = matrix(M, sparse=True)
-    A.save(f"test_matrix_{dmax}.sobj")
+    # A = matrix(M, sparse=True)
+    # A.save(f"test_matrix_{dmax}.sobj")
     # out = open(f"Matrices/A_{dmax}.sms", "w")
     # out.write("{0} {1} M\n".format(nrows, ncols))
     # for (i,j) in A.nonzero_positions():
@@ -178,15 +182,14 @@ def solve_bihomo_fast(R, F, dmax):
     print(f"Lancement de l'algèbre linéaire...")
     t_start = time.time()
     # print(f"density before rref {M.density(approx=True)}")
-    M.echelonize()
-    rank = M.rank()
+    rank = timing_rank(M)
     print(f"Rang: {rank} (Pleine: {rank == min(nrows, ncols)}) nblignes = {nrows} ncols = {ncols}")
     t_end = time.time()
     
     print(f"Terminé en {t_end - t_start:.4f}s")
 
-    p = M.visualize_structure(maxsize=1024)
-    p.save('/tmp/matrix_echelon.png')
+    # p = M.visualize_structure(maxsize=1024)
+    # p.save('/tmp/matrix_echelon.png')
 
     return M, rank == min(nrows, ncols)
 
@@ -274,14 +277,14 @@ if __name__ == "__main__":
 
     F = sorted(F, key=lambda f: f.lm())
 
-    for i in range(2, 10):
-        print(f"d = {i}")
-        M, rank = solve_bihomo_fast(R, F, i)
-        if not rank:
-            print(f"dreg = {i+1}")
-            break
+    # for i in range(2, 10):
+    #     print(f"d = {i}")
+    #     M, rank = solve_bihomo_fast(R, F, i)
+    #     if not rank:
+    #         print(f"dreg = {i+1}")
+    #         break
 
-    # M, rank = solve_bihomo_sparse(R, F, 6)
+    cProfile.run("solve_bihomo_fast(R, F, 7)", sort='cumtime')
 
     M.save("test_matrix.sobj")
 

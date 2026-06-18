@@ -1,5 +1,8 @@
-from sage.all import *
 import time
+import os
+import psutil
+
+p = 2
 
 def generate_bilinear_system(n_x, n_y, m):
     """
@@ -7,7 +10,10 @@ def generate_bilinear_system(n_x, n_y, m):
     en n_x variables x_i et n_y variables y_j sur GF(2),
     avec une solution plantée qui annule tous les polynômes.
     """
-    K = GF(2)
+    print(f"generating random {m} polynomials on GF({p}) with {n_x} variables in\
+    x and {n_y} variables in y")
+
+    K = GF(p)
 
     x_vars = ['x{}'.format(i) for i in range(1, n_x + 1)]
     y_vars = ['y{}'.format(j) for j in range(1, n_y + 1)]
@@ -75,6 +81,15 @@ def hilbert_biseries(nx, ny, m):
     num = (1 - tx*ty)^m + Nm(ny, m, tx, ty) + Nm(nx, m, ty, tx)
     return num / denom
 
+def series_briaud(nx, ny, m):
+    R.<tx,ty> = PowerSeriesRing(ZZ, default_prec=max(nx, ny) + 10)
+    Ad = ((1 - tx*ty)**(m)) / ((1 - tx)^(nx) * (1 - ty)^(ny))
+    # first_term = 1/((1 - tx)^(nx) * (1 - ty)^(ny))
+    second_num = tx * (1 - ty)^(nx) - ty * (1 - tx)^(ny)
+    second_denom = (tx - ty) * (1 - tx)^(nx) * (1 - ty)^(ny)
+    Bd = second_num/second_denom
+    return (Ad, Bd)
+
 def get_matrix_dimensions(F, nx, ny, target_d):
     """
     Calcule à l'avance nrows et ncols pour le bidegré target_d=(d1, d2)
@@ -119,27 +134,25 @@ def solve_bihomo_fast(R, F, dmax):
     
     print(f"Allocation Matrix [{nrows}x{ncols}] pour bidegré ({dmax},1)...")
     # On crée la matrice directement en mémoire GF(2)
-    M = matrix(GF(2), nrows, ncols)
+    M = matrix(R.base_ring(), nrows, ncols)
 
-    # 2. Génération des monômes de colonnes (Triés pour l'ordre monoïdal)
+    # 2. Génération des monômes de colonnes (Triés pour l'ordre)
     Lx = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(dmax, nx)]
     Ly = [R.monomial(*([0]*nx + list(v))) for v in IntegerVectors(1, ny)]
     cols = sorted([mx * my for mx in Lx for my in Ly], reverse=True)
     monom_to_idx = {m: i for i, m in enumerate(cols)}
+        
+    # Multiplicateurs u
+    # Lx_u = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(du_x, nx)]
+    # Ly_u = [R.monomial(*([0]*nx + list(v))) for v in IntegerVectors(du_y, ny)]
+    # multipliers = [mx * my for mx in Lx_u for my in Ly_u]
+    
+    multipliers = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(dmax - 1, nx)]
 
     # 3. Remplissage direct de la matrice
     current_row = 0
-    for f in F:
-        du_x, du_y = dmax - 1, 0
-        
-        if du_x < 0 or du_y < 0: continue
-        
-        # Multiplicateurs u
-        Lx_u = [R.monomial(*(list(v) + [0]*ny)) for v in IntegerVectors(du_x, nx)]
-        Ly_u = [R.monomial(*([0]*nx + list(v))) for v in IntegerVectors(du_y, ny)]
-        multipliers = [mx * my for mx in Lx_u for my in Ly_u]
-        
-        for u in multipliers:
+    for u in multipliers:
+        for f in F:
             poly = u * f
             # Optimisation : on remplit la ligne i de la matrice M
             for coeff, monom in poly:
@@ -152,16 +165,29 @@ def solve_bihomo_fast(R, F, dmax):
                         return
             current_row += 1
 
-    # 4. Élimination de Gauss (M4RI automatique)
-    # print(f"Lancement de M4RI...")
+    #####Ecriture format pour SPASM#####
+    A = matrix(M, sparse=True)
+    A.save(f"test_matrix_{dmax}.sobj")
+    # out = open(f"Matrices/A_{dmax}.sms", "w")
+    # out.write("{0} {1} M\n".format(nrows, ncols))
+    # for (i,j) in A.nonzero_positions():
+    #     out.write("{0} {1} {2}\n".format(i + 1, j + 1, A[i,j]))
+    # out.write("0 0 0\n")
+    # out.close()
+
+    print(f"Lancement de l'algèbre linéaire...")
     t_start = time.time()
-    print(f"density before rref {M.density(approx=True)}")
+    # print(f"density before rref {M.density(approx=True)}")
     M.echelonize()
     rank = M.rank()
     print(f"Rang: {rank} (Pleine: {rank == min(nrows, ncols)}) nblignes = {nrows} ncols = {ncols}")
     t_end = time.time()
     
     print(f"Terminé en {t_end - t_start:.4f}s")
+
+    p = M.visualize_structure(maxsize=1024)
+    p.save('/tmp/matrix_echelon.png')
+
     return M, rank == min(nrows, ncols)
 
 
@@ -208,31 +234,62 @@ def solve_bihomo_sparse(R, F, dmax):
 if __name__ == "__main__":
     from sage.rings.polynomial.polydict import ETuple    
     
-    NX = 7
+    NX = 8
     NY = NX
-    M = NY + NX - 2
+    M = NY + NX + 1
     R, F = generate_bilinear_system(NX, NY, M)
-    F = homogenized_ideal(F)
     # F = homogenized_ideal(load(f"../MPCitH_SBC/system/sage/system_bilin_{NX + NY}_{M}.sobj"))
     # print(f"SBC Nx = Ny = {NX} M = {M}")
-    # R = F[0].parent()
+    R = F[0].parent()
+    
+    F = homogenized_ideal(F)
     bi_hilbert = hilbert_biseries(NX, NY, M)
-    print(bi_hilbert)
     bi_hilbert = bi_hilbert.monomial_coefficients()
+    Ad, Bd = series_briaud(NX, NY, M)
+    Ad = Ad.monomial_coefficients()
+    Bd = Bd.monomial_coefficients()
+    
     dmax = 0
     for i in range(NX + NY):
         if bi_hilbert[ETuple([i, 1])] <= 0:
             dmax = i
             break
 
-    print(f"dmax = {dmax}")
+    dmax2 = 0
+    for i in range(1, NX + NY):
+        if Ad[ETuple([i, 1])] <= 0 or Bd[ETuple([i, 1])] <= 0:
+            dmax2 = i
+            break
+    
+    for i in range(1, max(dmax2, dmax)):
+        print(f"Ad[{i}, 1] = {Ad[ETuple([i, 1])]} Bd[{i}, 1] = {Bd[ETuple([i, 1])]} HBS[{i}, 1] = {bi_hilbert[ETuple([i, 1])]}")
+
+    estimation = ceil((NX*NY - NY)/(M - NY))
+
+    print(f"dmax = {dmax} estimation = {estimation} briaud/romaric predicted = {dmax2}")
 
     # print(f"Système généré: {M} équations, {NX} variables x, {NY} variables y")
     
     # On teste sur quelques bidegrés
+
+    F = sorted(F, key=lambda f: f.lm())
+
     for i in range(2, 10):
         print(f"d = {i}")
         M, rank = solve_bihomo_fast(R, F, i)
         if not rank:
-            print(f"dreg = {i}, density = {M.density(approx=True)}")
+            print(f"dreg = {i+1}")
             break
+
+    # M, rank = solve_bihomo_sparse(R, F, 6)
+
+    M.save("test_matrix.sobj")
+
+process = psutil.Process(os.getpid())
+mem_bytes = process.memory_info().rss
+mem_mb = mem_bytes / (1024 ** 2)
+mem_gb = mem_bytes / (1024 ** 3)
+if mem_gb >= 1.0:
+    print(f"Mémoire RAM max utilisée : {float(mem_gb):.2f} Go")
+else:
+    print(f"Mémoire RAM max utilisée : {float(mem_mb):.2f} Mo")
